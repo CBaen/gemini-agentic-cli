@@ -41,6 +41,16 @@ from .custom_loader import (
     load_custom_tools, get_custom_tools, create_default_config,
     list_custom_tools, CUSTOM_LOADER_TOOLS
 )
+from .notebook import (
+    read_notebook, get_cell, edit_cell, insert_cell,
+    delete_notebook_cell, move_cell, execute_notebook,
+    create_notebook, convert_notebook, clear_outputs,
+    NOTEBOOK_TOOLS
+)
+from .live_api import (
+    start_live_session, end_live_session, get_live_transcripts,
+    LIVE_API_TOOLS
+)
 
 __all__ = [
     # Filesystem
@@ -80,4 +90,12 @@ __all__ = [
     # Custom Tools
     'load_custom_tools', 'get_custom_tools', 'create_default_config',
     'list_custom_tools', 'CUSTOM_LOADER_TOOLS',
+    # Notebook (Phase 4)
+    'read_notebook', 'get_cell', 'edit_cell', 'insert_cell',
+    'delete_notebook_cell', 'move_cell', 'execute_notebook',
+    'create_notebook', 'convert_notebook', 'clear_outputs',
+    'NOTEBOOK_TOOLS',
+    # Live API (Phase 4)
+    'start_live_session', 'end_live_session', 'get_live_transcripts',
+    'LIVE_API_TOOLS',
 ]

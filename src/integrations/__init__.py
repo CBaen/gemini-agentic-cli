@@ -49,6 +49,13 @@ from .audit import (
     audit_context,
     AUDIT_TOOLS,
 )
+from .ide_server import (
+    start_ide_server,
+    get_extension_template,
+    IDEHandler,
+    JSONRPCServer,
+    IDE_SERVER_TOOLS,
+)
 
 __all__ = [
     # Security
@@ -96,4 +103,10 @@ __all__ = [
     'audit_tool',
     'audit_context',
     'AUDIT_TOOLS',
+    # IDE Server (Phase 4)
+    'start_ide_server',
+    'get_extension_template',
+    'IDEHandler',
+    'JSONRPCServer',
+    'IDE_SERVER_TOOLS',
 ]

@@ -4,14 +4,19 @@ Orchestrator - The Core Agent Loop
 This is the beating heart of the Gemini Agentic CLI.
 It coordinates: user input → Gemini → tool execution → response display.
 
-Phase 3 Complete - Full multimodal and advanced capabilities:
+Phase 4 Complete - Full multimodal and experimental capabilities:
 - Security layer integration (sandboxing, whitelisting)
 - Confirmation prompts for destructive operations
-- Extended tool registry (50+ tools)
+- Extended tool registry (60+ tools)
 - Session lifecycle management
 - Audit logging
 - Video, audio, document, web, code execution capabilities
 - Custom tool loading via YAML
+- Jupyter notebook support
+- Live API infrastructure (voice/video)
+- Self-correction loops
+- Real-time streaming
+- IDE integration server
 
 Flow:
     1. User provides input
@@ -311,6 +316,41 @@ class Orchestrator:
             })
         except ImportError:
             pass  # Already loaded basic image tools
+
+        # Notebook tools (Phase 4)
+        try:
+            from tools.notebook import (
+                read_notebook, get_cell, edit_cell, insert_cell,
+                delete_notebook_cell, move_cell, execute_notebook,
+                create_notebook, convert_notebook, clear_outputs
+            )
+            registry.update({
+                "read_notebook": read_notebook,
+                "get_cell": get_cell,
+                "edit_cell": edit_cell,
+                "insert_cell": insert_cell,
+                "delete_notebook_cell": delete_notebook_cell,
+                "move_cell": move_cell,
+                "execute_notebook": execute_notebook,
+                "create_notebook": create_notebook,
+                "convert_notebook": convert_notebook,
+                "clear_outputs": clear_outputs,
+            })
+        except ImportError:
+            pass  # Optional tools
+
+        # Live API tools (Phase 4)
+        try:
+            from tools.live_api import (
+                start_live_session, end_live_session, get_live_transcripts
+            )
+            registry.update({
+                "start_live_session": start_live_session,
+                "end_live_session": end_live_session,
+                "get_live_transcripts": get_live_transcripts,
+            })
+        except ImportError:
+            pass  # Optional tools
 
         return registry
 
@@ -823,6 +863,72 @@ class Orchestrator:
                     args.get("image_path_2", args.get("path2", "")),
                     args.get("comparison_type", "visual")
                 )
+            # Phase 4: Notebook tools
+            elif tool_name == "read_notebook":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", "")),
+                    args.get("include_outputs", "true").lower() in ("true", "yes", "1")
+                )
+            elif tool_name == "get_cell":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", "")),
+                    int(args.get("cell_index", 0))
+                )
+            elif tool_name == "edit_cell":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", "")),
+                    int(args.get("cell_index", 0)),
+                    args.get("new_content", ""),
+                    args.get("cell_type")
+                )
+            elif tool_name == "insert_cell":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", "")),
+                    int(args.get("position", 0)),
+                    args.get("content", ""),
+                    args.get("cell_type", "code")
+                )
+            elif tool_name == "delete_notebook_cell":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", "")),
+                    int(args.get("cell_index", 0))
+                )
+            elif tool_name == "move_cell":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", "")),
+                    int(args.get("from_index", 0)),
+                    int(args.get("to_index", 0))
+                )
+            elif tool_name == "execute_notebook":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", "")),
+                    args.get("output_path"),
+                    int(args.get("timeout", 60))
+                )
+            elif tool_name == "create_notebook":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", "")),
+                    args.get("kernel", "python3")
+                )
+            elif tool_name == "convert_notebook":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", "")),
+                    args.get("output_format", "html"),
+                    args.get("output_path")
+                )
+            elif tool_name == "clear_outputs":
+                success, output = handler(
+                    args.get("notebook_path", args.get("path", ""))
+                )
+            # Phase 4: Live API tools
+            elif tool_name == "start_live_session":
+                success, output = handler(
+                    args.get("session_id")
+                )
+            elif tool_name == "end_live_session":
+                success, output = handler()
+            elif tool_name == "get_live_transcripts":
+                success, output = handler()
             else:
                 # Generic call attempt for custom tools and any others
                 success, output = handler(**args)
