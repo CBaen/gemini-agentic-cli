@@ -483,7 +483,7 @@ class Orchestrator:
             return "Error: gemini-account.sh not found. Please ensure it exists at ~/.claude/scripts/gemini-account.sh"
 
         acc = account or self._get_account()
-        model_id = model or "gemini-2.5-flash"
+        model_id = model or "gemini-2.5-flash-lite"  # Default to Flash-Lite for quota preservation
 
         # Find Git Bash on Windows for reliable execution
         if sys.platform == 'win32':

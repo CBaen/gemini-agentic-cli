@@ -3,17 +3,18 @@ Image Tools - Generation and Analysis
 
 Gemini has powerful multimodal capabilities:
 - Image analysis: OCR, object detection with bounding boxes, visual Q&A
-- Image generation: Create images via gemini-2.5-flash-image (500 free/day)
+- Image generation: High-fidelity images with accurate text rendering
 
-Capabilities (from research):
+Capabilities:
 - Zero-shot object detection and segmentation
 - Bounding box coordinates for detected objects
 - Formats: PNG, JPEG, BMP, WebP (up to 15MB, 24 megapixels, max 3 per prompt)
 - Generation aspect ratios: 21:9, 16:9, 4:3, 3:2, 1:1, 2:3, 3:4, 9:16, 9:21
 
-Model Routing:
-- Image analysis: gemini-2.5-flash (default)
-- Image generation: gemini-2.5-flash-image (auto-selected)
+Model Routing (AI Pro + OAuth):
+- Image analysis: gemini-3-flash-preview (unlimited)
+- Image generation: gemini-3-pro-image-preview (1,000/day per account = 2,000 total)
+- Fast image gen: gemini-2.5-flash-image (1,000/day per account = 2,000 total)
 """
 
 import subprocess
@@ -28,9 +29,11 @@ from typing import Tuple, Optional, List, Dict, Any
 # Gemini script location
 GEMINI_SCRIPT = Path.home() / ".claude" / "scripts" / "gemini-account.sh"
 
-# Model IDs
-MODEL_FLASH = "gemini-2.5-flash"
-MODEL_FLASH_IMAGE = "gemini-2.5-flash-image"
+# Model IDs (AI Pro + OAuth quotas)
+MODEL_FLASH_LITE = "gemini-2.5-flash-lite"      # Default for automation (1,500/day per account)
+MODEL_FLASH_3 = "gemini-3-flash-preview"        # Daily driver, unlimited
+MODEL_IMAGE_PRO = "gemini-3-pro-image-preview"  # High-fidelity images (1,000/day per account)
+MODEL_IMAGE_FLASH = "gemini-2.5-flash-image"    # Fast image generation (1,000/day per account)
 
 # Supported aspect ratios for image generation
 SUPPORTED_ASPECT_RATIOS = [
@@ -59,7 +62,7 @@ def call_gemini(
     query: str,
     account: int = 1,
     timeout: int = 120,
-    model: str = MODEL_FLASH
+    model: str = MODEL_FLASH_3
 ) -> Tuple[bool, str]:
     """
     Call Gemini and return response.
@@ -68,7 +71,7 @@ def call_gemini(
         query: The prompt to send
         account: Account number (1 or 2)
         timeout: Request timeout in seconds
-        model: Model ID (gemini-2.5-flash or gemini-2.5-flash-image)
+        model: Model ID (default: gemini-3-flash-preview for image analysis)
 
     Returns:
         Tuple of (success, response)
@@ -159,9 +162,9 @@ def generate_image(
     account: int = 1
 ) -> Tuple[bool, str]:
     """
-    Generate an image using gemini-2.5-flash-image model.
+    Generate a high-fidelity image using gemini-3-pro-image-preview.
 
-    This automatically uses the image generation model (500 free images/day).
+    This automatically uses the Pro image model for best quality.
 
     Args:
         prompt: Description of the image to generate
@@ -173,8 +176,8 @@ def generate_image(
     Returns:
         Tuple of (success: bool, message: str)
 
-    Model: gemini-2.5-flash-image (auto-selected)
-    Free quota: 500 images per day
+    Model: gemini-3-pro-image-preview (auto-selected)
+    Quota: 1,000 images/day per account (2,000 total with 2 accounts)
 
     Limitations:
         - Text in images: 25 characters or less recommended
@@ -196,11 +199,11 @@ Output Format: PNG
 
 Please generate this image. Return the image data or confirm generation."""
 
-    # Use the image generation model (gemini-2.5-flash-image)
-    success, response = call_gemini(full_prompt, account, model=MODEL_FLASH_IMAGE)
+    # Use the high-fidelity image generation model (1,000/day per account = 2,000 total)
+    success, response = call_gemini(full_prompt, account, model=MODEL_IMAGE_PRO)
 
     if success:
-        return True, f"Image generation request sent using {MODEL_FLASH_IMAGE}.\nOutput path: {output_path}\nResponse: {response}"
+        return True, f"Image generation request sent using {MODEL_IMAGE_PRO}.\nOutput path: {output_path}\nResponse: {response}"
 
     return False, response
 

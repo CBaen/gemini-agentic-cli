@@ -52,32 +52,46 @@
 **Why**: Enables asynchronous collaboration. Gemini does research, stores findings. Claude queries findings, makes decisions.
 **Collection**: `lineage_research` for shared research, project-specific collections for project data.
 
-### Decision: Model Routing for Tasks
+### Decision: Model Routing for Tasks (AI Pro + OAuth)
 **Date**: January 15, 2026
-**What**: Auto-route tasks to the appropriate Gemini model
-**Why**: Different tasks need different models. Image generation requires `gemini-2.5-flash-image`, while text/multimodal uses `gemini-2.5-flash`.
+**What**: Auto-route tasks to the appropriate Gemini model based on quotas and task type
+**Why**: Different tasks need different models. Optimized for quota preservation.
 
-**Model Selection**:
-| Task | Model | Free Quota |
-|------|-------|------------|
-| Text, Chat, Code | gemini-2.5-flash | ~1,000/day |
-| Video/Audio/Document Analysis | gemini-2.5-flash | ~1,000/day |
-| Image Analysis | gemini-2.5-flash | ~1,000/day |
-| **Image Generation** | gemini-2.5-flash-image | **500/day** |
-| Complex Reasoning | gemini-2.5-pro | ~1,000/day |
+**Quotas (2 Pro accounts via OAuth):**
+| Model | Per Account | Total | Use For |
+|-------|-------------|-------|---------|
+| gemini-3-pro-preview | 100/day | 200 | Complex reasoning, architecture |
+| gemini-3-flash-preview | Unlimited | Unlimited | Chat, summaries, daily driver |
+| gemini-2.5-pro | 100/day | 200 | Large file analysis (1M context) |
+| gemini-2.5-flash | Unlimited | Unlimited | Standard tasks (rate limited) |
+| **gemini-2.5-flash-lite** | 1,500/day | **3,000** | **HIGH VOLUME automation** |
+| gemini-3-pro-image-preview | 1,000/day | 2,000 | High-fidelity images |
+| gemini-2.5-flash-image | 1,000/day | 2,000 | Fast image generation |
+| Veo 3.1 | 3/day | 6 | Video generation |
+
+**Routing Strategy:**
+| Task Type | Model | Why |
+|-----------|-------|-----|
+| Research/Automation | Flash-Lite | 3,000/day budget |
+| Chat/Summaries | 3.0 Flash | Unlimited, fast |
+| Architecture | 3.0 Pro | Best reasoning (use sparingly) |
+| Large Files | 2.5 Pro | 1M context stability |
+| Image Gen | 3-pro-image | High quality (2,000/day) |
 
 **Implementation**:
-- `src/core/model_router.py` - Auto-routing logic
-- `gemini-account.sh` now accepts third param for model
-- Image tools auto-select `gemini-2.5-flash-image`
+- `src/core/model_router.py` - Auto-routing logic with quota optimization
+- `gemini-account.sh` - Accepts model as third param, defaults to Flash-Lite
+- Image tools auto-select `gemini-3-pro-image-preview`
 
 **Usage**:
 ```bash
-# Default (gemini-2.5-flash)
+# Default (Flash-Lite for quota preservation)
 gemini-account.sh 1 "query"
 
-# Specific model
-gemini-account.sh 1 "query" gemini-2.5-flash-image
+# Specific models
+gemini-account.sh 1 "query" gemini-3-flash-preview    # Daily driver
+gemini-account.sh 1 "query" gemini-3-pro-preview      # Complex tasks
+gemini-account.sh 1 "query" gemini-3-pro-image-preview # Image generation
 ```
 
 ---
