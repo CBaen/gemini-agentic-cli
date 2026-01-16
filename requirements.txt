@@ -1,0 +1,17 @@
+# Gemini Agentic CLI Dependencies
+#
+# Core dependencies needed for Phase 1:
+
+# None yet - Phase 1 uses only stdlib
+# subprocess, json, os, pathlib are all built-in
+
+# Phase 2 will add:
+# qdrant-client>=1.7.0    # Vector database client
+# requests>=2.31.0        # HTTP requests (if needed)
+
+# Phase 3 will add:
+# Pillow>=10.0.0         # Image handling
+# psutil>=5.9.0          # Process monitoring for rate limiting
+
+# Development:
+pytest>=7.4.0            # Testing framework
