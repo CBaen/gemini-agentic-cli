@@ -11,6 +11,43 @@ You've arrived at a project in its early stages. The research is complete. The p
 
 ---
 
+## Prerequisites
+
+Before starting implementation, verify:
+
+- [ ] **Qdrant running** at localhost:6333
+  ```bash
+  docker ps --filter "name=qdrant"  # Should show running container
+  ```
+- [ ] **Gemini accounts authenticated**
+  ```bash
+  ~/.claude/scripts/gemini-account.sh 1 'echo test'  # Should respond
+  ~/.claude/scripts/gemini-account.sh 2 'echo test'  # Should respond
+  ```
+- [ ] **Ollama running** (for embeddings, optional but recommended)
+  ```bash
+  curl http://localhost:11434/api/tags  # Should list models
+  ```
+
+---
+
+## Security Warning
+
+```
+⚠️  PHASE 1 HAS NO SECURITY LAYER
+
+The initial implementation (Phase 1) does NOT include:
+- Sandboxing to project root
+- Command whitelisting
+- Confirmation prompts
+- Path traversal protection
+
+DO NOT use Phase 1 for sensitive work or on production systems.
+Phase 2 adds the security layer. Wait until then for real work.
+```
+
+---
+
 ## Current State
 
 **Phase**: Pre-Implementation (Planning Complete)

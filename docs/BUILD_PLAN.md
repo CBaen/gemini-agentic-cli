@@ -190,6 +190,19 @@ TOOL_RESULT: read_file | path=src/main.py | content=
 - Use triple backticks for multiline content
 - Include both tool name and args in result (for context in history)
 
+**Escaping rules** (handle `|` in content):
+```
+| Character | Escaped As | When |
+|-----------|------------|------|
+| `|`       | `\|`       | When pipe appears in file content or command output |
+| `\`       | `\\`       | When backslash appears before pipe |
+```
+
+Parser logic:
+1. Split on ` | ` (pipe with spaces, unescaped)
+2. Unescape `\|` → `|` and `\\` → `\` in values
+3. Triple backticks delimit multiline content (no escaping needed inside)
+
 **Research reference**: Query Qdrant for "tool-use interface design text parsing"
 
 ---
@@ -250,6 +263,43 @@ def clear_history():
 ```
 
 **Why this matters**: Without conversation memory, every interaction is stateless. The agent can't build on previous context. This is the minimal persistence needed for multi-turn tasks.
+
+---
+
+### Error Handling (Phase 1)
+
+Even in MVP, handle these cases gracefully:
+
+| Error | Detection | Response |
+|-------|-----------|----------|
+| Empty Gemini response | `not response.strip()` | Retry once with same prompt, then show error |
+| Malformed tool call | Regex doesn't match | Ask Gemini to reformulate |
+| Rate limit hit | "quota exceeded" in response | Switch to other account, retry |
+| Tool not found | `tool_name not in registry` | Return error listing available tools |
+| File not found | `FileNotFoundError` | Return `TOOL_RESULT: ... \| error=File not found: <path>` |
+| Permission denied | `PermissionError` | Return `TOOL_RESULT: ... \| error=Permission denied: <path>` |
+| Command timeout | `subprocess.TimeoutExpired` | Kill process, return `TOOL_RESULT: ... \| error=Command timed out after 120s` |
+| Command failed | `returncode != 0` | Return stderr in TOOL_RESULT, let Gemini decide next step |
+
+**Key principle**: Never crash. Always return something Gemini can reason about. Let the LLM decide whether to retry, try something else, or report failure to user.
+
+---
+
+### Account Rotation Logic
+
+"Turn" = one complete user input → final response cycle
+
+```python
+turn_count = 0  # Global counter
+
+def get_account_for_turn():
+    global turn_count
+    turn_count += 1
+    return (turn_count % 2) + 1  # Alternates: 1, 2, 1, 2...
+
+# Tool calls within a turn use the SAME account as that turn
+# Parallel spawns alternate: spawn 1 → Account 1, spawn 2 → Account 2
+```
 
 ---
 

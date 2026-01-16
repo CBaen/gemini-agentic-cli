@@ -1,0 +1,50 @@
+# OAuth credentials - NEVER commit these
+oauth_creds*.json
+**/oauth_creds*.json
+
+# Gemini CLI data directory
+.gemini-cli/
+
+# Conversation history and audit logs
+conversation_history.json
+audit.jsonl
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Environment
+.env
+.env.local
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.temp
+*.log
