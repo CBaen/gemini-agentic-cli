@@ -151,6 +151,46 @@ class Orchestrator:
         except ImportError:
             pass  # Optional tools
 
+        # Spawn tools (Phase 3) - parallel Gemini instances
+        try:
+            from tools.spawn import spawn_research, spawn_single
+            registry.update({
+                "spawn_research": spawn_research,
+                "spawn_single": spawn_single,
+            })
+        except ImportError:
+            pass  # Optional tools
+
+        # Image tools (Phase 3)
+        try:
+            from tools.image import (
+                analyze_image, generate_image_prompt,
+                describe_for_accessibility, extract_text_from_image
+            )
+            registry.update({
+                "analyze_image": analyze_image,
+                "generate_image_prompt": generate_image_prompt,
+                "describe_for_accessibility": describe_for_accessibility,
+                "extract_text_from_image": extract_text_from_image,
+            })
+        except ImportError:
+            pass  # Optional tools
+
+        # Claude collaboration tools (Phase 3)
+        try:
+            from integrations.claude_collab import (
+                check_turn, signal_claude_turn,
+                read_handoff_context, add_to_shared_memory
+            )
+            registry.update({
+                "check_turn": check_turn,
+                "signal_claude_turn": signal_claude_turn,
+                "read_handoff_context": read_handoff_context,
+                "add_to_shared_memory": add_to_shared_memory,
+            })
+        except ImportError:
+            pass  # Optional tools
+
         return registry
 
     def _request_user_confirmation(self, message: str) -> bool:
@@ -410,6 +450,55 @@ class Orchestrator:
                 success, output = handler(
                     args.get("content", ""),
                     args.get("research_type", "general")
+                )
+            # Phase 3: Spawn tools
+            elif tool_name == "spawn_research":
+                # Parse queries - could be JSON array or comma-separated
+                queries_raw = args.get("queries", "")
+                if queries_raw.startswith("["):
+                    import json
+                    queries = json.loads(queries_raw)
+                else:
+                    queries = [q.strip() for q in queries_raw.split(",") if q.strip()]
+                success, output = handler(queries)
+            elif tool_name == "spawn_single":
+                account = int(args.get("account", 1))
+                success, output = handler(args.get("query", ""), account)
+            # Phase 3: Image tools
+            elif tool_name == "analyze_image":
+                success, output = handler(
+                    args.get("image_path", args.get("path", "")),
+                    args.get("prompt", "Describe this image in detail.")
+                )
+            elif tool_name == "generate_image_prompt":
+                success, output = handler(
+                    args.get("description", ""),
+                    args.get("style", "photorealistic"),
+                    args.get("aspect_ratio", "1:1")
+                )
+            elif tool_name == "describe_for_accessibility":
+                success, output = handler(
+                    args.get("image_path", args.get("path", "")),
+                    args.get("context", "")
+                )
+            elif tool_name == "extract_text_from_image":
+                success, output = handler(args.get("image_path", args.get("path", "")))
+            # Phase 3: Claude collaboration tools
+            elif tool_name == "check_turn":
+                success, output = handler()
+            elif tool_name == "signal_claude_turn":
+                success, output = handler(
+                    summary=args.get("summary", ""),
+                    research_topics=args.get("research_topics", "").split(",") if args.get("research_topics") else None,
+                    questions=args.get("questions", "").split(",") if args.get("questions") else None
+                )
+            elif tool_name == "read_handoff_context":
+                success, output = handler()
+            elif tool_name == "add_to_shared_memory":
+                success, output = handler(
+                    category=args.get("category", "Learning"),
+                    content=args.get("content", ""),
+                    source="gemini"
                 )
             else:
                 # Generic call attempt

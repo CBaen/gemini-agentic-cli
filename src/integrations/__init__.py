@@ -27,6 +27,15 @@ from .qdrant_client import (
     check_qdrant_available,
     QDRANT_TOOLS,
 )
+from .claude_collab import (
+    check_turn,
+    signal_claude_turn,
+    signal_gemini_turn,
+    read_handoff_context,
+    add_to_shared_memory,
+    create_research_handoff,
+    COLLAB_TOOLS,
+)
 
 __all__ = [
     # Security
@@ -54,4 +63,12 @@ __all__ = [
     'store_research',
     'check_qdrant_available',
     'QDRANT_TOOLS',
+    # Claude Collaboration
+    'check_turn',
+    'signal_claude_turn',
+    'signal_gemini_turn',
+    'read_handoff_context',
+    'add_to_shared_memory',
+    'create_research_handoff',
+    'COLLAB_TOOLS',
 ]
