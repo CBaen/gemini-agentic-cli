@@ -1,0 +1,284 @@
+Loaded cached credentials.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 205.964642ms...
+Attempt 2 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 855.4127080000001ms...
+```json
+{
+  "title": "Comprehensive Guide to Logging and Monitoring for AI Automation Systems",
+  "introduction": "Logging and monitoring are critical pillars for the successful development, deployment, and maintenance of AI automation systems. They provide essential visibility into system behavior, performance, errors, and resource utilization, enabling debugging, optimization, auditing, and cost management. This guide covers key aspects of logging and monitoring for AI systems, focusing on structured logging, log rotation, metrics collection, dashboarding, alerting, cost tracking, and usage analytics, with a particular emphasis on Python-based solutions and frameworks.",
+  "structured_logging": {
+    "description": "Structured logging involves outputting log messages in a consistent, machine-readable format, typically JSON, rather than plain text. This approach is crucial for AI systems due to the high volume and complexity of data, facilitating easier parsing, querying, and analysis by log management tools and automated systems.",
+    "importance_for_ai": [
+      "Enhanced Debugging: Rapidly filter and search for specific events related to model inference, data processing, or system errors.",
+      "Performance Monitoring: Track metrics like inference time, request latency, and resource utilization directly within logs.",
+      "Auditing and Explainability: Record inputs, outputs, model versions, and feature flags to understand AI decision-making processes.",
+      "Data Analysis: Extract structured data for post-hoc analysis of model behavior, drift detection, and error patterns.",
+      "Observability: Provide rich context for understanding complex AI workflows and interactions."
+    ],
+    "best_practices": [
+      "Use a consistent JSON schema for all log entries.",
+      "Include essential context like timestamps, log levels, service names, and request identifiers.",
+      "Incorporate AI-specific fields such as model versions, inference times, input/output hashes, feature flags, and experiment IDs.",
+      "Ensure logs are easily searchable and filterable.",
+      "Centralize logs for unified analysis."
+    ],
+    "python_implementation": {
+      "libraries": [
+        {
+          "name": "python-json-logger",
+          "description": "Extends Python's standard `logging` module to output logs in JSON format. It allows custom formatters to include predefined and dynamic fields.",
+          "example_code": "import logging\nfrom pythonjsonlogger import jsonlogger\nimport sys\n\nclass CustomJsonFormatter(jsonlogger.JsonFormatter):\n    def add_fields(self, log_record, message_dict):\n        super(CustomJsonFormatter, self).add_fields(log_record, message_dict)\n        if not log_record.get('timestamp'):\n            log_record['timestamp'] = self.formatTime(log_record, self.datefmt)\n        if log_record.get('level'):\n            log_record['level'] = log_record['level'].upper()\n        else:\n            log_record['level'] = log_record['levelname']\n\n        # Add AI-specific context\n        log_record['service'] = 'ai_automation_system'\n        log_record['model_version'] = 'v1.2.3'\n        log_record['request_id'] = message_dict.get('request_id', 'N/A')\n        log_record['user_id'] = message_dict.get('user_id', 'N/A')\n        log_record['inference_time_ms'] = message_dict.get('inference_time_ms', None)\n        log_record['input_hash'] = message_dict.get('input_hash', None)\n        log_record['output_hash'] = message_dict.get('output_hash', None)\n\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\n\nlogHandler = logging.StreamHandler(sys.stdout)\nformatter = CustomJsonFormatter('%(timestamp)s %(level)s %(name)s %(message)s')\nlogHandler.setFormatter(formatter)\nlogger.addHandler(logHandler)\n\nlogger.info('Model inference started.', extra={'request_id': 'abc-123', 'user_id': 'user-456'})\nlogger.info('Inference complete.', extra={'request_id': 'abc-123', 'inference_time_ms': 150, 'output_hash': 'xyz789'})\nlogger.error('Model prediction failed.', extra={'request_id': 'def-456', 'error_code': 500, 'details': 'Input validation failed'})"
+        },
+        {
+          "name": "structlog",
+          "description": "A powerful and flexible library designed for structured logging from the ground up, offering configurable processing pipelines for rich context and various output formats, including JSON.",
+          "example_code": "import logging\nimport structlog\nimport sys\n\nstructlog.configure(\n    processors=[\n        structlog.stdlib.add_logger_name,\n        structlog.stdlib.add_log_level,\n        structlog.processors.TimeStamper(fmt=\"iso\"),\n        structlog.processors.StackInfoRenderer(),\n        structlog.dev.set_exc_info,\n        structlog.processors.format_exc_info,\n        # Add AI-specific context processors\n        structlog.processors.merge_dicts(\n            {'service': 'ai_automation_system', 'model_version': 'v1.2.3'}\n        ),\n        structlog.processors.JSONRenderer(),\n    ],\n    logger_factory=structlog.stdlib.LoggerFactory(),\n    wrapper_class=structlog.stdlib.BoundLogger,\n    cache_logger_on_first_use=True,\n)\n\n# Configure standard logging to output to structlog\nlogging.basicConfig(\n    format=\"%(message)s\",\n    stream=sys.stdout,\n    level=logging.INFO,\n)\n\nlogger = structlog.get_logger(__name__)\n\nlogger.info('Model inference started.', request_id='abc-123', user_id='user-456')\nlogger.info('Inference complete.', request_id='abc-123', inference_time_ms=150, output_hash='xyz789')\ntry:\n    raise ValueError(\"Invalid input data\")\nexcept ValueError:\n    logger.error('Model prediction failed.', request_id='def-456', error_code=500, details='Input validation failed', exc_info=True)"
+        }
+      ],
+      "common_fields_for_ai": [
+        "timestamp",
+        "level",
+        "message",
+        "service",
+        "model_id",
+        "model_version",
+        "request_id",
+        "user_id",
+        "inference_time_ms",
+        "input_data_hash",
+        "output_data_hash",
+        "feature_flags",
+        "experiment_id",
+        "resource_utilization"
+      ]
+    }
+  },
+  "log_rotation": {
+    "description": "Log rotation is the process of archiving or deleting old log files to manage disk space and ensure efficient log management. For AI systems that generate high volumes of logs, effective rotation is critical.",
+    "importance_for_ai": [
+      "Disk Space Management: Prevents log files from filling up storage, which can lead to application crashes.",
+      "Performance: Keeps individual log files smaller, speeding up access and analysis.",
+      "Easier Analysis: Facilitates navigation and processing of time-bound or size-bound log segments.",
+      "Compliance: Helps in adhering to log retention policies."
+    ],
+    "python_handlers": {
+      "RotatingFileHandler": {
+        "description": "Rotates logs based on file size. When a log file reaches a specified maximum byte size, it is renamed, and a new log file is created.",
+        "example_code": "import logging\nfrom logging.handlers import RotatingFileHandler\nimport os\n\nlog_file_path = 'ai_app_size.log'\nmax_bytes = 10 * 1024 * 1024  # 10 MB\nbackup_count = 5             # Keep 5 old log files\n\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\n\nos.makedirs(os.path.dirname(log_file_path) or '.', exist_ok=True)\n\nhandler = RotatingFileHandler(\n    log_file_path,\n    maxBytes=max_bytes,\n    backupCount=backup_count,\n    encoding='utf-8'\n)\nhandler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))\nlogger.addHandler(handler)\n\nfor i in range(10000):\n    logger.info(f\"Processing AI task {i}. This is a sample log line to test rotation.\")"
+      },
+      "TimedRotatingFileHandler": {
+        "description": "Rotates logs at specified time intervals (e.g., daily, hourly). A new log file is created based on the time schedule.",
+        "example_code": "import logging\nfrom logging.handlers import TimedRotatingFileHandler\nimport os\n\nlog_file_path = 'ai_app_time.log'\nwhen = 'midnight'  # Rotate daily at midnight\ninterval = 1       # Every 1 day\nbackup_count = 7   # Keep 7 days of logs\n\nlogger = logging.getLogger(__name__)\nlogger.setLevel(logging.INFO)\n\nos.makedirs(os.path.dirname(log_file_path) or '.', exist_ok=True)\n\nhandler = TimedRotatingFileHandler(\n    log_file_path,\n    when=when,\n    interval=interval,\n    backupCount=backup_count,\n    encoding='utf-8'\n)\nhandler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))\nlogger.addHandler(handler)\n\nfor i in range(1000):\n    logger.info(f\"Processing AI task {i}. This is a sample log line to test time-based rotation.\")"
+      }
+    },
+    "considerations_for_ai_automation": [
+      "Containerized Environments: Log to stdout/stderr and let orchestration platforms (Docker, Kubernetes) manage collection.",
+      "Centralized Logging: Integrate with systems like ELK, Splunk, or cloud services for advanced management.",
+      "External Tools: Use `logrotate` (Linux) for system-wide consistency.",
+      "Combined Rotation: Consider handlers that support both size and time-based rotation for complex scenarios."
+    ]
+  },
+  "metrics_collection": {
+    "description": "Metrics collection involves gathering quantitative data points about the performance and health of AI systems over time. This data is essential for monitoring, alerting, and performance tuning.",
+    "importance_for_ai": [
+      "Performance Tuning: Identify bottlenecks and areas for optimization (e.g., inference speed, resource usage).",
+      "Health Monitoring: Detect system failures, anomalies, and degradation in real-time.",
+      "Capacity Planning: Understand resource needs and predict future requirements.",
+      "Model Performance Tracking: Monitor accuracy, precision, recall, latency, and other quality indicators.",
+      "Cost Management: Track resource consumption to control cloud spend."
+    ],
+    "key_metrics_for_ai": [
+      "Standard System Metrics: CPU usage, memory consumption, disk I/O, network traffic.",
+      "AI-Specific Performance Metrics: Inference latency (total, time-to-first-token), throughput (requests/sec), prediction accuracy, precision, recall, F1-score, AUC.",
+      "Resource Utilization: GPU utilization, VRAM usage.",
+      "Error Rates: API errors, model prediction failures, validation errors.",
+      "Data Drift Metrics: Statistical divergence between training and inference data distributions.",
+      "Concept Drift Metrics: Changes in the relationship between input features and the target variable.",
+      "Token Usage: Input and output tokens for LLM-based systems.",
+      "Cost Metrics: Cloud spend, per-request cost."
+    ],
+    "python_tools_and_frameworks": [
+      {
+        "name": "Prometheus client library (`prometheus_client`)",
+        "description": "Enables Python applications to expose metrics in a format that Prometheus can scrape. Supports Counter, Gauge, Histogram, and Summary metric types.",
+        "example_concept": "Define metric objects (e.g., Gauge for GPU usage) and update their values within your AI application code. Start a simple HTTP server to expose metrics for Prometheus to collect."
+      },
+      {
+        "name": "Evidently AI",
+        "description": "An open-source Python library for ML model monitoring, focusing on data and model quality, data drift, and performance evaluation. Generates metrics and reports."
+      },
+      {
+        "name": "whylogs (WhyLabs)",
+        "description": "An open-source Python library for logging data and generating statistical profiles of datasets. Tracks data distributions and changes over time."
+      },
+      {
+        "name": "MLflow",
+        "description": "Tracks ML experiments, logging parameters, metrics, and artifacts. Useful for comparing model performance across runs."
+      },
+      {
+        "name": "TensorBoard",
+        "description": "A visualization toolkit for TensorFlow that provides metrics dashboards, graph visualizations, and histograms."
+      }
+    ]
+  },
+  "dashboards": {
+    "description": "Dashboards provide a visual interface for presenting collected metrics, logs, and alerts, enabling users to quickly understand the state and performance of AI systems.",
+    "importance_for_ai": [
+      "Real-time Monitoring: Visualizing live performance and health indicators.",
+      "Trend Analysis: Identifying patterns, anomalies, and performance degradation over time.",
+      "Root Cause Analysis: Correlating different metrics to diagnose issues.",
+      "Stakeholder Communication: Providing a clear overview of system status to various teams.",
+      "UX Improvement: Visualizing user interaction patterns and AI response times."
+    ],
+    "python_dashboarding_tools": [
+      {
+        "name": "Dash by Plotly",
+        "description": "A powerful framework for building interactive analytical web applications and dashboards entirely in Python. Integrates with Plotly for rich, interactive charts.",
+        "example_concept": "Define application layout using Dash HTML Components and Core Components. Create interactive graphs and tables to visualize AI metrics fetched from a backend or monitoring system. Use Python callbacks to update components based on user interactions or data changes."
+      },
+      {
+        "name": "Streamlit",
+        "description": "Simplifies the creation of interactive web applications and dashboards for data science and ML with minimal Python code.",
+        "example_concept": "Write a Python script that uses Streamlit widgets (sliders, buttons) and plotting functions (e.g., Plotly, Matplotlib) to display AI metrics and results. Streamlit automatically renders these into a web application."
+      },
+      {
+        "name": "Panel by HoloViz",
+        "description": "A versatile framework for creating custom layouts and dashboards, supporting various visualization tools and interactive widgets.",
+        "example_concept": "Combine plots from different libraries (Bokeh, Matplotlib, Plotly) and interactive widgets to build dynamic dashboards for exploring AI performance data."
+      },
+      {
+        "name": "Gradio",
+        "description": "Enables building web interfaces for ML models quickly, ideal for creating demos and interactive UIs for AI models.",
+        "example_concept": "Wrap your AI model inference function with Gradio to create a web interface where users can input data and see predictions, along with visualized performance metrics or confidence scores."
+      },
+      {
+        "name": "Taipy",
+        "description": "An open-source Python solution for building full-stack AI/ML applications and dashboards, featuring a no-code GUI builder (Taipy Designer).",
+        "example_concept": "Utilize Taipy's GUI builder to design dashboard layouts and connect them to your AI application's backend logic and data sources."
+      }
+    ],
+    "integration_with_ai_frameworks": {
+      "Grafana": {
+        "description": "An open-source platform for monitoring and observability that integrates with Prometheus and other data sources to create highly customizable dashboards for real-time AI system visualization. Can display metrics exposed by Python applications via Prometheus client.",
+        "example_concept": "Configure Grafana to query metrics from a Prometheus server that scrapes metrics from your AI application. Design dashboards with graphs for latency, throughput, error rates, and custom AI quality metrics."
+      },
+      "MLflow UI": {
+        "description": "Provides a built-in user interface for visualizing ML experiment runs, including logged metrics, parameters, and artifacts. Useful for comparing model versions and their performance characteristics."
+      },
+      "Evidently AI Reports": {
+        "description": "Generates interactive HTML reports that can serve as standalone dashboards for data drift and model performance analysis."
+      },
+      "Phoenix (Arize AI)": {
+        "description": "Provides its own interface for visualizing LLM-specific metrics, traces, and prompt performance."
+      }
+    }
+  },
+  "alerting": {
+    "description": "Alerting mechanisms notify stakeholders when predefined conditions or anomalies are detected in AI systems, ensuring prompt intervention.",
+    "importance_for_ai": [
+      "Proactive Issue Resolution: Detect critical failures, performance degradation, or security breaches before they impact users.",
+      "SLA Enforcement: Monitor service level objectives and trigger alerts if they are at risk of being violated.",
+      "Anomaly Detection: Identify unexpected behavior or deviations from normal operational patterns.",
+      "Resource Exhaustion: Warn about impending resource limitations (CPU, memory, disk)."
+    ],
+    "strategies": [
+      "Threshold-based alerts: Triggered when metrics exceed or fall below predefined static thresholds (e.g., error rate > 5%).",
+      "Anomaly detection: Utilize statistical methods or ML models to identify unusual patterns that deviate from historical norms.",
+      "Symptom-based alerting: Trigger alerts based on combinations of symptoms (e.g., high latency AND high error rate).",
+      "Uptime monitoring: Periodically check if the AI service is responsive."
+    ],
+    "python_integration": {
+      "Prometheus Alertmanager": "Prometheus collects metrics, and Alertmanager handles deduplication, grouping, and routing of alerts to various notification channels (email, Slack, PagerDuty) based on configured rules.",
+      "Commercial Platforms (Datadog, New Relic, etc.)": "These platforms offer integrated alerting systems with flexible rule configuration and numerous notification integrations.",
+      "Custom Python Alerting": "Python scripts can monitor metrics (e.g., via an API) and trigger notifications using libraries for email, SMS (e.g., Twilio), or chat platforms."
+    }
+  },
+  "cost_tracking": {
+    "description": "Cost tracking involves monitoring and analyzing the expenses associated with running AI automation systems, including cloud infrastructure, API calls, and model inference.",
+    "importance_for_ai": [
+      "Budget Management: Control operational expenses and prevent unexpected cost overruns.",
+      "Resource Optimization: Identify inefficient resource usage and areas for cost reduction.",
+      "ROI Assessment: Understand the financial return on AI investments.",
+      "Chargeback/Showback: Attribute costs to specific teams or projects.",
+      "Predictive Cost Analysis: Forecast future spending based on current usage trends."
+    ],
+    "strategies": [
+      "Token-based cost monitoring: Track input/output token usage for LLMs and apply pricing models.",
+      "Cloud resource cost monitoring: Monitor compute (CPU, GPU), storage, and network costs.",
+      "Cost allocation: Tag resources and track expenses by service, feature, user, or project.",
+      "Budgeting and alerts: Set spending limits and receive notifications.",
+      "Usage analysis: Identify usage patterns to inform optimization efforts."
+    ],
+    "python_tools_and_libraries": [
+      {
+        "name": "tiktoken (OpenAI)",
+        "description": "OpenAI's official library for counting tokens in text. Essential for accurately estimating LLM API costs.",
+        "example_code": "import tiktoken\n\ndef num_tokens_from_string(string: str, encoding_name: str) -> int:\n    \"\"\"Returns the number of tokens in a text string using a specific encoding.\"\"\"\n    encoding = tiktoken.get_encoding(encoding_name)\n    num_tokens = encoding.encode(string)\n    return len(num_tokens)\n\n# Example usage for gpt-4 model encoding\nencoding = tiktoken.encoding_for_model(\"gpt-4\") \ntext = \"This is a sample text to count tokens.\"\ntokens = encoding.encode(text)\nprint(f\"Number of tokens: {len(tokens)}\")\nprint(f\"Token cost estimate (assuming $0.03/1k input tokens): ${len(tokens) * 0.03 / 1000:.6f}\")"
+      },
+      {
+        "name": "LiteLLM",
+        "description": "Provides a unified interface for various LLMs and includes features for logging costs, latencies, and token usage for each API call.",
+        "example_concept": "Use LiteLLM to make LLM calls and configure its callback system to log cost and token data to a database or analytics platform."
+      },
+      {
+        "name": "Langfuse SDK",
+        "description": "An open-source LLM engineering platform that tracks costs, latencies, token usage, and quality metrics. Integrates with Python applications via its SDK.",
+        "example_concept": "Instrument your LLM interactions using the Langfuse SDK to automatically capture cost and usage data, which is then visualized in the Langfuse dashboard."
+      },
+      {
+        "name": "Python Cost Tracker Libraries (e.g., `openai-cost-tracker`, `tokencost`, `TokenX`)",
+        "description": "Various libraries that act as wrappers or provide decorators to automatically track costs and token usage of LLM API calls.",
+        "example_code_concept": "Apply a decorator to your LLM client functions to automatically log token counts and estimated costs per invocation."
+      },
+      {
+        "name": "AWS SDK (`boto3`)",
+        "description": "Used to interact with AWS services, including the AWS Cost Explorer API, to programmatically retrieve detailed cost and usage data for cloud resources."
+      }
+    ],
+    "cost_optimization_techniques": [
+      "Caching: Store and reuse results of frequent AI calls to reduce redundant processing.",
+      "Model Cascading/Routing: Use smaller, cheaper models for simpler tasks and powerful models for complex ones.",
+      "Prompt Engineering: Optimize prompts for conciseness and efficiency.",
+      "Fine-tuning: For high-volume tasks, fine-tune smaller models for better cost-efficiency.",
+      "Resource Right-Sizing: Ensure compute instances and storage are appropriately sized for the workload.",
+      "Leverage Serverless: Use serverless functions for event-driven AI tasks to pay only for execution time."
+    ]
+  },
+  "usage_analytics": {
+    "description": "Usage analytics focuses on understanding how AI systems are being utilized, identifying user behavior patterns, and evaluating the effectiveness of AI features.",
+    "importance_for_ai": [
+      "User Behavior Understanding: Identify popular features, common workflows, and user pain points.",
+      "Product Development: Inform improvements and new feature development based on actual usage.",
+      "Model Improvement: Understand how models are being used to identify areas for retraining or fine-tuning.",
+      "Performance Optimization: Analyze usage patterns to optimize AI response times and resource allocation.",
+      "Feature Adoption: Track the usage of new AI capabilities."
+    ],
+    "strategies": [
+      "Log key interaction data: Track timestamps, model used, token counts, latency, error rates, user IDs, feature IDs, and request/response payloads (with redaction).",
+      "Monitor user journeys: Analyze sequences of AI interactions.",
+      "Segment users: Understand usage patterns across different user groups.",
+      "Track AI feature adoption: Measure how often specific AI functionalities are used.",
+      "Analyze query patterns: Identify common prompts or types of requests.",
+      "Measure AI impact: Correlate AI usage with business outcomes."
+    ],
+    "python_implementation_details": [
+      "Integrate logging with structured formats (JSON) to capture comprehensive interaction data.",
+      "Use libraries like `pandas` for data manipulation and analysis of logged usage data.",
+      "Store usage data in appropriate databases (SQL, NoSQL, Data Warehouses) for querying and reporting.",
+      "Utilize BI tools (Tableau, Power BI, Grafana) or custom dashboards (Dash, Streamlit) to visualize analytics.",
+      "Leverage LLM observability platforms like Langfuse or Phoenix to automatically track and analyze AI usage patterns."
+    ]
+  },
+  "complete_python_monitoring_framework_example": {
+    "overview": "Building a comprehensive monitoring framework involves integrating multiple components: structured logging, metric exposition, dashboarding, alerting, and cost tracking. This conceptual example outlines how these can be combined in a Python application, focusing on core principles rather than a fully deployable system.",
+    "components": {
+      "structured_logging": "Utilize `structlog` or `python-json-logger` to emit JSON logs with AI-specific context to stdout/stderr. Container orchestration will handle log aggregation.",
+      "metrics_exposure": "Employ `prometheus_client` to expose key AI metrics (e.g., inference latency, token count, error rate) via an HTTP endpoint. This endpoint will be scraped by Prometheus.",
+      "dashboarding_integration": "Configure Grafana to scrape metrics from Prometheus. Optionally, use Streamlit or Dash for custom internal dashboards that might query logged data or specific metrics.",
+      "alerting_setup": "Configure Prometheus Alertmanager to monitor metrics exposed by the application. Alerts can be routed to Slack or PagerDuty.",
+      "cost_tracking_integration": "Use libraries like `tiktoken` or `LiteLLM` within the application to estimate costs per request. Log this cost data and send it to an analytics backend or a dedicated cost dashboard."
+    },
+    "conceptual_code_structure": "```python\nimport logging\nimport structlog\nimport sys\nimport time\nimport os\nfrom collections import defaultdict\n\n# For Prometheus metrics\nfrom prometheus_client import start_http_server, Gauge, Counter, Histogram\n\n# For structured logging\nstructlog.configure(\n    processors=[structlog.stdlib.add_logger_name, structlog.stdlib.add_log_level, structlog.processors.TimeStamper(fmt=\"iso\"), structlog.processors.JSONRenderer()],\n    logger_factory=structlog.stdlib.LoggerFactory(),\n    wrapper_class=structlog.stdlib.BoundLogger,\n)\nlogging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(message)s')\nlogger = structlog.get_logger(__name__)\n\n# Prometheus Metrics Initialization\nINFERENCE_LATENCY = Histogram('ai_inference_latency_seconds', 'Latency of AI inference in seconds', buckets=[0.1, 0.5, 1, 2, 5, 10])\nREQUEST_COUNT = Counter('ai_requests_total', 'Total number of AI requests', ['status'])\nTOKEN_USAGE = Counter('ai_tokens_total', 'Total tokens processed', ['type'])\nCURRENT_JOBS = Gauge('ai_current_jobs', 'Number of jobs currently being processed')\n\n# Dummy Cost Tracking (e.g., using tiktoken or LiteLLM for real app)\nTOKEN_PRICES = {'gpt-3.5-turbo': {'prompt': 0.0015, 'completion': 0.002}, 'gpt-4': {'prompt': 0.03, 'completion': 0.06}}\ndef estimate_cost(input_tokens, output_tokens, model_name='gpt-3.5-turbo'):\n    if model_name in TOKEN_PRICES:\n        cost = (input_tokens * TOKEN_PRICES[model_name]['prompt'] + \n                output_tokens * TOKEN_PRICES[model_name]['completion']) / 1000\n        return cost\n    return 0.0\n\n\n# Simulate AI Service\ndef process_ai_request(input_data):\n    start_time = time.time()\n    request_id = f\"req-{int(time.time() * 1000)}\"\n    CURRENT_JOBS.inc() # Increment active jobs\n    \n    try:\n        # Simulate AI processing\n        input_tokens = len(input_data.split()) # Dummy token count\n        time.sleep(0.5) # Simulate inference time\n        output_data = f\"Processed: {input_data.upper()}\"\n        output_tokens = len(output_data.split()) # Dummy token count\n        \n        latency = time.time() - start_time\n        \n        # Update metrics\n        INFERENCE_LATENCY.observe(latency)\n        REQUEST_COUNT.labels('success').inc()\n        TOKEN_USAGE.labels('input').inc(input_tokens)\n        TOKEN_USAGE.labels('output').inc(output_tokens)\n        \n        estimated_cost = estimate_cost(input_tokens, output_tokens)\n\n        log_context = {\n            'request_id': request_id,\n            'model_used': 'simulated_model_v1',\n            'input_tokens': input_tokens,\n            'output_tokens': output_tokens,\n            'estimated_cost_usd': estimated_cost,\n            'latency_seconds': latency,\n            'status': 'success'\n        }\n        logger.info('AI request processed', **log_context)\n        \n        return output_data, estimated_cost\n\n    except Exception as e:\n        latency = time.time() - start_time\n        REQUEST_COUNT.labels('error').inc()\n        log_context = {\n            'request_id': request_id,\n            'error': str(e),\n            'latency_seconds': latency,\n            'status': 'error'\n        }\n        logger.info('AI request failed', **log_context)\n        raise\n    finally:\n        CURRENT_JOBS.dec() # Decrement active jobs\n\n\n# Main execution block\nif __name__ == \"__main__\":\n    # Start Prometheus metrics server\n    print(\"Starting Prometheus metrics server on port 8000\")\n    start_http_server(8000)\n\n    print(\"AI Service running. Press Ctrl+C to stop.\")\n\n    # Simulate incoming requests\n    try:\n        while True:\n            data = input(\"Enter data to process: \")\n            if not data: continue\n            \n            try:\n                result, cost = process_ai_request(data)\n                print(f\"Result: {result}\")\n                print(f\"Estimated Cost: ${cost:.6f}\")\n            except Exception as e:\n                print(f\"Error processing request: {e}\")\n            \n            time.sleep(1) # Small delay between requests\n\n    except KeyboardInterrupt:\n        print(\"\\nShutting down AI Service.\")\n\n```\n\n**To use this conceptual framework:**\n1.  **Install Libraries:** `pip install prometheus_client structlog` (and potentially `tiktoken`, `LiteLLM`, etc. for real cost tracking).\n2.  **Run the Script:** Execute `python your_script_name.py`. It will start a metrics server on port 8000.\n3.  **Expose Metrics:** Configure Prometheus to scrape `http://localhost:8000/metrics`.\n4.  **Dashboard:** Set up Grafana to connect to Prometheus and visualize metrics like `ai_requests_total`, `ai_inference_latency_seconds`, `ai_tokens_total`, etc.\n5.  **Alerting:** Configure Prometheus Alertmanager rules based on these metrics.\n6.  **Logging:** The structured JSON logs will be printed to stdout and can be collected by your container orchestrator or logging agent."
+  },
+  "conclusion": "Implementing a robust logging and monitoring strategy is paramount for AI automation systems. By leveraging structured logging, effective log rotation, comprehensive metrics collection, insightful dashboards, proactive alerting, diligent cost tracking, and detailed usage analytics, organizations can ensure the reliability, efficiency, and cost-effectiveness of their AI deployments. Python offers a rich ecosystem of tools and frameworks to facilitate the implementation of these critical monitoring capabilities."
+}
+```
