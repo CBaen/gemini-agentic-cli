@@ -94,6 +94,44 @@ gemini-account.sh 1 "query" gemini-3-pro-preview      # Complex tasks
 gemini-account.sh 1 "query" gemini-3-pro-image-preview # Image generation
 ```
 
+### Decision: Auto-Retry with Exponential Backoff
+**Date**: January 15, 2026
+**What**: Implement retry logic at both bash and Python layers
+**Why**: Rate limits can cause temporary failures; automatic retry improves reliability
+
+**Rate Limits (RPM - Requests Per Minute):**
+| Model | Approx RPM | Recommended Concurrency |
+|-------|------------|-------------------------|
+| gemini-3-pro-preview | 30-60 | 5 |
+| gemini-3-flash-preview | 60+ | 10 |
+| gemini-3-pro-image-preview | 5-10 | 2 |
+| gemini-2.5-flash-image | 60 | 10 |
+| gemini-2.5-flash-lite | 60 | 10 |
+
+**Bash Layer** (`gemini-account.sh`):
+- 3 retries with exponential backoff (2s, 4s, 8s)
+- Detects: "429", "Resource Exhausted", "RESOURCE_EXHAUSTED", "rate limit", "quota exceeded"
+- Suggests account switch on failure
+
+**Python Layer** (`src/core/batch_processor.py`):
+- Async/await with semaphore-based concurrency control
+- Configurable retry (default: 3 retries, 2s base delay, 30s max)
+- Jitter to prevent thundering herd
+- Account rotation on retry
+- Per-model concurrency limits
+
+**Usage**:
+```python
+from src.core import BatchProcessor, run_batch
+
+# Async usage
+processor = BatchProcessor()
+results = await processor.batch_execute(prompts, model="gemini-2.5-flash-lite")
+
+# Sync wrapper
+results = run_batch(prompts, model="gemini-2.5-flash-lite")
+```
+
 ---
 
 ## Research Findings
