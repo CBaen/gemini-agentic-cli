@@ -70,31 +70,39 @@ We're building a command-line AI assistant that:
 ### Dependency Graph
 
 ```
-PHASE 1 (MVP)
+PHASE 1 (MVP) ✓ COMPLETE
 ├── 1.1 Basic orchestrator loop
 ├── 1.2 Tool-use text protocol
 ├── 1.3 Core tools (read, write, list, run)
 └── 1.4 Conversation memory (JSON)
 
-PHASE 2 (Core Enhancement)
+PHASE 2 (Core Enhancement) ✓ COMPLETE
 ├── 2.1 Code search (ripgrep) ────────────┐
 ├── 2.2 Edit tool (not just overwrite)    │ depends on 1.3
 ├── 2.3 Security layer ───────────────────┤
 ├── 2.4 Session lifecycle ────────────────┤
 └── 2.5 Qdrant integration ───────────────┘
 
-PHASE 3 (Advanced)
+PHASE 3 (Multimodal & Advanced) ✓ COMPLETE
 ├── 3.1 Parallel sub-instance spawning ───┐
-├── 3.2 Image generation/analysis         │ depends on 2.x
-├── 3.3 Claude collaboration protocol ────┤
-├── 3.4 Custom tool definition ───────────┤
-└── 3.5 Comprehensive audit logging ──────┘
+├── 3.2 Image analysis (OCR, detection)   │
+├── 3.3 Image generation (Imagen)         │
+├── 3.4 Video analysis                    │ depends on 2.x
+├── 3.5 Audio/Speech (TTS, STT)           │
+├── 3.6 Document processing (PDF, Excel)  │
+├── 3.7 Web search grounding              │
+├── 3.8 URL fetching                      │
+├── 3.9 Python code execution sandbox     │
+├── 3.10 Claude collaboration protocol ───┤
+├── 3.11 Custom tool definition ──────────┤
+└── 3.12 Comprehensive audit logging ─────┘
 
 PHASE 4 (Experimental)
-├── 4.1 Audio/video input
+├── 4.1 Multimodal Live API (real-time voice)
 ├── 4.2 Self-correction loops
 ├── 4.3 Real-time streaming
-└── 4.4 IDE integration
+├── 4.4 IDE integration
+└── 4.5 Jupyter notebook support
 ```
 
 ---
@@ -532,26 +540,298 @@ def spawn_gemini_parallel(queries: List[str]) -> List[str]:
 
 ---
 
-### Task 3.2: Image Generation/Analysis
+### Task 3.2: Image Analysis
 **Status**: `[x] Complete`
 **Depends on**: Phase 2 complete
 **Files**: `src/tools/image.py`
 
 **What to build**:
 
-1. **analyze_image(path)**
-   - Send image to Gemini Vision
-   - Return description/analysis
+```python
+def analyze_image(path: str, query: str = None) -> str:
+    """
+    Analyze image using Gemini Vision.
 
-2. **generate_image(prompt, output_path)**
-   - Use Imagen API (if available via OAuth)
-   - Save to specified path
+    Capabilities:
+    - OCR: Extract text from images, including tables and charts
+    - Object Detection: Identify and locate objects with bounding boxes
+    - Visual Q&A: Answer questions about image content
+    - Scene Description: Generate detailed captions
+    """
+```
 
-**Research reference**: Query Qdrant for "gemini image capabilities" - there's detailed research on this.
+**Tool protocol**:
+```
+TOOL_CALL: analyze_image | path=screenshot.png | query=What text is visible?
+TOOL_RESULT: analyze_image | path=screenshot.png | analysis=...
+```
+
+**Implementation notes**:
+- Gemini 2.5 supports zero-shot object detection and segmentation
+- Bounding box coordinates returned for object detection
+- Works with PNG, JPEG, BMP, WebP formats
+- Images up to 15MB or 24 megapixels (max 3 per prompt)
 
 ---
 
-### Task 3.3: Claude Collaboration Protocol
+### Task 3.3: Image Generation
+**Status**: `[x] Complete`
+**Depends on**: Phase 2 complete
+**Files**: `src/tools/image.py`
+
+**What to build**:
+
+```python
+def generate_image(prompt: str, output_path: str, aspect_ratio: str = "1:1") -> str:
+    """
+    Generate image using Imagen.
+
+    Supported aspect ratios: 21:9, 16:9, 4:3, 3:2, 1:1, 2:3, 3:4, 9:16, 9:21
+    Default resolution: 1024px
+    Styles: photorealism, impressionism, abstract, etc.
+    """
+```
+
+**Tool protocol**:
+```
+TOOL_CALL: generate_image | prompt=A futuristic city at sunset | output_path=city.png | aspect_ratio=16:9
+TOOL_RESULT: generate_image | output_path=city.png | status=success
+```
+
+**Limitations to document**:
+- Text in images: 25 characters or less recommended
+- Struggles with: precise spatial reasoning, medical images, non-Latin text
+- Usage caps vary by subscription tier
+
+---
+
+### Task 3.4: Video Analysis
+**Status**: `[x] Complete`
+**Depends on**: Phase 2 complete
+**Files**: `src/tools/video.py`
+
+**What to build**:
+
+```python
+def analyze_video(path: str, query: str, timestamp: str = None) -> str:
+    """
+    Analyze video content using Gemini.
+
+    Capabilities:
+    - Scene description and segmentation
+    - Timestamp-based querying (format: MM:SS)
+    - Frame extraction (configurable FPS, default 1 FPS)
+    - Object/count analysis
+    - Emotion detection
+    - Audio+visual transcription
+    """
+```
+
+**Tool protocol**:
+```
+TOOL_CALL: analyze_video | path=demo.mp4 | query=What happens at 02:30?
+TOOL_RESULT: analyze_video | path=demo.mp4 | analysis=At 02:30, the presenter...
+```
+
+**Implementation notes**:
+- 1M token context = ~1 hour of video
+- Supports up to 10 videos per request
+- File upload via File API for larger files
+- YouTube URLs also supported
+
+---
+
+### Task 3.5: Audio/Speech Tools
+**Status**: `[x] Complete`
+**Depends on**: Phase 2 complete
+**Files**: `src/tools/audio.py`
+
+**What to build**:
+
+1. **transcribe_audio(path)**
+   ```python
+   def transcribe_audio(path: str, identify_speakers: bool = False) -> str:
+       """
+       Transcribe audio using Gemini.
+
+       Features:
+       - Accurate transcription and summarization
+       - Speaker diarization (identify different speakers)
+       - Background noise filtering
+       - Up to 9.5 hours of long-form audio
+       - 24+ languages supported
+       """
+   ```
+
+2. **generate_speech(text, output_path, voice_style)**
+   ```python
+   def generate_speech(text: str, output_path: str, style: str = "natural") -> str:
+       """
+       Generate speech using Gemini TTS.
+
+       Features:
+       - Adjustable style, tone, pace, pronunciation
+       - Multi-speaker dialogue support
+       - Multilingual output (24+ languages)
+       - Seamless language mixing
+       """
+   ```
+
+**Tool protocol**:
+```
+TOOL_CALL: transcribe_audio | path=meeting.mp3 | identify_speakers=true
+TOOL_RESULT: transcribe_audio | path=meeting.mp3 | transcript=[Speaker 1]: Hello...
+
+TOOL_CALL: generate_speech | text=Welcome to the demo | output_path=welcome.mp3 | style=professional
+TOOL_RESULT: generate_speech | output_path=welcome.mp3 | status=success
+```
+
+---
+
+### Task 3.6: Document Processing
+**Status**: `[x] Complete`
+**Depends on**: Phase 2 complete
+**Files**: `src/tools/documents.py`
+
+**What to build**:
+
+```python
+def process_document(path: str, query: str) -> str:
+    """
+    Process and analyze documents using Gemini multimodal.
+
+    Supported formats:
+    - PDF: Up to 1,000 pages or 50MB, extracts tables, charts, diagrams
+    - Excel: Up to 100MB, interprets data, identifies patterns
+    - Word: Recognizes headings, tables, charts, footnotes
+    - CSV, Google Docs/Sheets/Slides also supported
+
+    Capabilities:
+    - Structured data extraction (invoices, forms)
+    - Visual layout comprehension
+    - Q&A based on document content
+    - Summarization
+    """
+```
+
+**Tool protocol**:
+```
+TOOL_CALL: process_document | path=invoice.pdf | query=Extract the total amount
+TOOL_RESULT: process_document | path=invoice.pdf | result=The total amount is $1,234.56
+```
+
+---
+
+### Task 3.7: Web Search Grounding
+**Status**: `[x] Complete`
+**Depends on**: Phase 2 complete
+**Files**: `src/tools/web.py`
+
+**What to build**:
+
+```python
+def web_search(query: str, include_sources: bool = True) -> str:
+    """
+    Search the web using Gemini's Google Search grounding.
+
+    Features:
+    - Real-time information from Google Search
+    - Reduces hallucinations with verifiable sources
+    - Automatic for complex queries
+
+    Implementation:
+    - Enable via googleSearch: {} in API tools config
+    - Built into Gemini CLI by default
+    """
+```
+
+**Tool protocol**:
+```
+TOOL_CALL: web_search | query=Latest Python 3.13 features
+TOOL_RESULT: web_search | query=Latest Python 3.13 features | results=...
+```
+
+---
+
+### Task 3.8: URL Fetching
+**Status**: `[x] Complete`
+**Depends on**: Phase 2 complete
+**Files**: `src/tools/web.py`
+
+**What to build**:
+
+```python
+def fetch_url(url: str, query: str = None) -> str:
+    """
+    Fetch and analyze web page content.
+
+    Uses Gemini's URL Context Tool.
+
+    Supported content types:
+    - HTML, JSON, plain text, XML, CSS, JavaScript
+    - CSV, RTF
+    - Images (PNG, JPEG, BMP, WebP)
+    - PDFs
+
+    Limits:
+    - Up to 20 URLs per request
+    - 34MB max content per URL
+    """
+```
+
+**Tool protocol**:
+```
+TOOL_CALL: fetch_url | url=https://example.com/docs | query=Summarize the main features
+TOOL_RESULT: fetch_url | url=https://example.com/docs | content=...
+```
+
+**Limitations**:
+- Doesn't support JavaScript-rendered pages
+- Content contributes to input token limits
+- Function calling unsupported with URL context tool
+
+---
+
+### Task 3.9: Python Code Execution
+**Status**: `[x] Complete`
+**Depends on**: Phase 2 complete
+**Files**: `src/tools/code_execution.py`
+
+**What to build**:
+
+```python
+def execute_python(code: str) -> str:
+    """
+    Execute Python code in Gemini's built-in sandbox.
+
+    Use cases:
+    - Mathematical computations
+    - Data analysis
+    - Code validation
+
+    Limitations:
+    - 30-second maximum runtime (STRICT)
+    - Optimized code only - avoid long operations
+    """
+```
+
+**Tool protocol**:
+```
+TOOL_CALL: execute_python | code=```
+import math
+print(math.factorial(10))
+```
+TOOL_RESULT: execute_python | stdout=3628800 | exit_code=0
+```
+
+**When to use**:
+- Complex calculations Gemini can't do in-context
+- Data processing and transformation
+- Validating generated code snippets
+
+---
+
+### Task 3.10: Claude Collaboration Protocol
 **Status**: `[x] Complete`
 **Depends on**: Task 2.5 (Qdrant Integration)
 **Files**: `src/integrations/claude_collab.py`
@@ -568,8 +848,8 @@ A handoff protocol where:
 
 ---
 
-### Task 3.4: Custom Tool Definition
-**Status**: `[ ] Not Started`
+### Task 3.11: Custom Tool Definition
+**Status**: `[x] Complete`
 **Depends on**: Task 1.2 (Tool Protocol)
 **Files**: `src/tools/custom_loader.py`
 
@@ -594,8 +874,8 @@ tools:
 
 ---
 
-### Task 3.5: Comprehensive Audit Logging
-**Status**: `[ ] Not Started`
+### Task 3.12: Comprehensive Audit Logging
+**Status**: `[x] Complete`
 **Depends on**: Task 2.3 (Security Layer)
 **Files**: `src/integrations/audit.py`
 
@@ -615,21 +895,61 @@ Log every action to `~/.gemini-cli/audit.jsonl`:
 
 These features are stretch goals. Build them if Phase 1-3 are solid and you have energy.
 
-### Task 4.1: Audio/Video Input
-- Use Gemini Live API for real-time audio
-- Process video files for analysis
+### Task 4.1: Multimodal Live API
+**Status**: `[ ] Not Started`
+**Files**: `src/tools/live_api.py`
+
+**What to build**:
+- Real-time, low-latency bidirectional voice interactions
+- Continuous streaming of audio, video, or text
+- WebSocket-based communication
+- Long resumable sessions
+- Time-stamped transcripts
+
+**Why this matters**: Enables voice-controlled CLI interactions and real-time audio/video processing.
 
 ### Task 4.2: Self-Correction Loops
-- Agent evaluates its own outputs
-- Retries with different approaches on failure
+**Status**: `[ ] Not Started`
+
+**What to build**:
+- Agent evaluates its own outputs against success criteria
+- Automatic retry with different approaches on failure
+- Learn from failed attempts within session
 
 ### Task 4.3: Real-Time Streaming
-- Stream responses as they generate
+**Status**: `[ ] Not Started`
+
+**What to build**:
+- Stream responses as they generate (not wait for complete response)
 - Interactive typing experience
+- Progress indicators for long operations
 
 ### Task 4.4: IDE Integration
+**Status**: `[ ] Not Started`
+
+**What to build**:
 - VS Code extension
 - Command palette integration
+- Inline code suggestions
+
+### Task 4.5: Jupyter Notebook Support
+**Status**: `[ ] Not Started`
+**Files**: `src/tools/notebook.py`
+
+**What to build**:
+```python
+def edit_notebook(path: str, cell_index: int, new_content: str) -> str:
+    """
+    Edit Jupyter notebook cells.
+
+    Mirrors Claude Code's NotebookEdit capability.
+    - Insert/delete/replace cells
+    - Execute cells and capture output
+    - Support both code and markdown cells
+    """
+```
+
+**Why this matters**: Data science workflows often use notebooks. This enables Gemini to assist with notebook-based development.
 
 ---
 

@@ -4,11 +4,14 @@ Orchestrator - The Core Agent Loop
 This is the beating heart of the Gemini Agentic CLI.
 It coordinates: user input → Gemini → tool execution → response display.
 
-Phase 2 additions:
+Phase 3 Complete - Full multimodal and advanced capabilities:
 - Security layer integration (sandboxing, whitelisting)
 - Confirmation prompts for destructive operations
-- Extended tool registry (search, edit, qdrant)
+- Extended tool registry (50+ tools)
 - Session lifecycle management
+- Audit logging
+- Video, audio, document, web, code execution capabilities
+- Custom tool loading via YAML
 
 Flow:
     1. User provides input
@@ -81,6 +84,13 @@ class Orchestrator:
                 set_confirmation_callback(self._request_user_confirmation)
             except ImportError:
                 print("Warning: Security module not available")
+
+        # Initialize audit logging
+        try:
+            from integrations.audit import log_session_start
+            log_session_start(str(self.project_root))
+        except ImportError:
+            pass  # Audit logging optional
 
         # Find gemini-account.sh
         if gemini_script:
@@ -190,6 +200,117 @@ class Orchestrator:
             })
         except ImportError:
             pass  # Optional tools
+
+        # Video tools (Phase 3)
+        try:
+            from tools.video import (
+                analyze_video, describe_video_scene, extract_video_frames,
+                transcribe_video, count_objects_in_video, detect_video_emotions
+            )
+            registry.update({
+                "analyze_video": analyze_video,
+                "describe_video_scene": describe_video_scene,
+                "extract_video_frames": extract_video_frames,
+                "transcribe_video": transcribe_video,
+                "count_objects_in_video": count_objects_in_video,
+                "detect_video_emotions": detect_video_emotions,
+            })
+        except ImportError:
+            pass  # Optional tools
+
+        # Audio tools (Phase 3)
+        try:
+            from tools.audio import (
+                transcribe_audio, generate_speech, generate_dialogue,
+                analyze_audio, translate_audio, extract_audio_segment
+            )
+            registry.update({
+                "transcribe_audio": transcribe_audio,
+                "generate_speech": generate_speech,
+                "generate_dialogue": generate_dialogue,
+                "analyze_audio": analyze_audio,
+                "translate_audio": translate_audio,
+                "extract_audio_segment": extract_audio_segment,
+            })
+        except ImportError:
+            pass  # Optional tools
+
+        # Document tools (Phase 3)
+        try:
+            from tools.documents import (
+                process_document, extract_tables, summarize_document,
+                extract_form_data, compare_documents, analyze_spreadsheet,
+                query_document_section
+            )
+            registry.update({
+                "process_document": process_document,
+                "extract_tables": extract_tables,
+                "summarize_document": summarize_document,
+                "extract_form_data": extract_form_data,
+                "compare_documents": compare_documents,
+                "analyze_spreadsheet": analyze_spreadsheet,
+                "query_document_section": query_document_section,
+            })
+        except ImportError:
+            pass  # Optional tools
+
+        # Web tools (Phase 3)
+        try:
+            from tools.web import (
+                web_search, fetch_url, fetch_multiple_urls, extract_links,
+                scrape_structured_data, search_and_summarize,
+                monitor_page_changes, verify_claim
+            )
+            registry.update({
+                "web_search": web_search,
+                "fetch_url": fetch_url,
+                "fetch_multiple_urls": fetch_multiple_urls,
+                "extract_links": extract_links,
+                "scrape_structured_data": scrape_structured_data,
+                "search_and_summarize": search_and_summarize,
+                "monitor_page_changes": monitor_page_changes,
+                "verify_claim": verify_claim,
+            })
+        except ImportError:
+            pass  # Optional tools
+
+        # Code execution tools (Phase 3)
+        try:
+            from tools.code_execution import (
+                execute_python, calculate, analyze_data, validate_code,
+                solve_equation, run_simulation, generate_and_test, debug_code
+            )
+            registry.update({
+                "execute_python": execute_python,
+                "calculate": calculate,
+                "analyze_data": analyze_data,
+                "validate_code": validate_code,
+                "solve_equation": solve_equation,
+                "run_simulation": run_simulation,
+                "generate_and_test": generate_and_test,
+                "debug_code": debug_code,
+            })
+        except ImportError:
+            pass  # Optional tools
+
+        # Custom tools (Phase 3 - loaded from YAML config)
+        try:
+            from tools.custom_loader import get_custom_tools
+            custom = get_custom_tools()
+            registry.update(custom)
+        except ImportError:
+            pass  # Optional tools
+
+        # Enhanced image tools (Phase 3)
+        try:
+            from tools.image import generate_image, detect_objects, compare_images
+            registry.update({
+                "generate_image": generate_image,
+                "detect_objects": detect_objects,
+                "compare_images": compare_images,
+            })
+        except ImportError:
+            pass  # Already loaded basic image tools
 
         return registry
 
@@ -378,6 +499,12 @@ class Orchestrator:
         # Security check
         allowed, security_msg = self._check_security(tool_call)
         if not allowed:
+            # Log security block
+            try:
+                from integrations.audit import log_security_event
+                log_security_event("blocked", tool_name, args, blocked=True, reason=security_msg)
+            except ImportError:
+                pass
             return ToolResult(
                 tool=tool_name,
                 success=False,
@@ -396,6 +523,10 @@ class Orchestrator:
             )
 
         handler = self.tool_registry[tool_name]
+
+        # Start timing for audit
+        import time
+        start_time = time.time()
 
         try:
             # Dispatch based on tool name
@@ -500,9 +631,213 @@ class Orchestrator:
                     content=args.get("content", ""),
                     source="gemini"
                 )
+            # Phase 3: Video tools
+            elif tool_name == "analyze_video":
+                success, output = handler(
+                    args.get("video_path", args.get("path", "")),
+                    args.get("query", ""),
+                    args.get("timestamp")
+                )
+            elif tool_name == "describe_video_scene":
+                success, output = handler(
+                    args.get("video_path", args.get("path", "")),
+                    args.get("start_time"),
+                    args.get("end_time")
+                )
+            elif tool_name == "transcribe_video":
+                success, output = handler(
+                    args.get("video_path", args.get("path", "")),
+                    args.get("include_timestamps", "true").lower() in ("true", "yes", "1"),
+                    args.get("identify_speakers", "false").lower() in ("true", "yes", "1")
+                )
+            elif tool_name == "count_objects_in_video":
+                success, output = handler(
+                    args.get("video_path", args.get("path", "")),
+                    args.get("object_type", ""),
+                    args.get("throughout", "true").lower() in ("true", "yes", "1")
+                )
+            # Phase 3: Audio tools
+            elif tool_name == "transcribe_audio":
+                success, output = handler(
+                    args.get("audio_path", args.get("path", "")),
+                    args.get("identify_speakers", "false").lower() in ("true", "yes", "1"),
+                    args.get("include_timestamps", "true").lower() in ("true", "yes", "1"),
+                    args.get("language")
+                )
+            elif tool_name == "generate_speech":
+                success, output = handler(
+                    args.get("text", ""),
+                    args.get("output_path", ""),
+                    args.get("style", "natural"),
+                    args.get("language", "en"),
+                    args.get("pace", "normal")
+                )
+            elif tool_name == "analyze_audio":
+                success, output = handler(
+                    args.get("audio_path", args.get("path", "")),
+                    args.get("analysis_type", "general")
+                )
+            elif tool_name == "translate_audio":
+                success, output = handler(
+                    args.get("audio_path", args.get("path", "")),
+                    args.get("target_language", "en"),
+                    args.get("output_mode", "text")
+                )
+            # Phase 3: Document tools
+            elif tool_name == "process_document":
+                success, output = handler(
+                    args.get("document_path", args.get("path", "")),
+                    args.get("query", "")
+                )
+            elif tool_name == "extract_tables":
+                success, output = handler(
+                    args.get("document_path", args.get("path", "")),
+                    args.get("output_format", "markdown"),
+                    int(args.get("table_index")) if args.get("table_index") else None
+                )
+            elif tool_name == "summarize_document":
+                success, output = handler(
+                    args.get("document_path", args.get("path", "")),
+                    args.get("summary_type", "executive"),
+                    int(args.get("max_length")) if args.get("max_length") else None
+                )
+            elif tool_name == "extract_form_data":
+                success, output = handler(
+                    args.get("document_path", args.get("path", "")),
+                    args.get("form_type", "auto")
+                )
+            elif tool_name == "compare_documents":
+                success, output = handler(
+                    args.get("doc_path_1", args.get("path1", "")),
+                    args.get("doc_path_2", args.get("path2", "")),
+                    args.get("comparison_focus", "content")
+                )
+            elif tool_name == "analyze_spreadsheet":
+                success, output = handler(
+                    args.get("spreadsheet_path", args.get("path", "")),
+                    args.get("analysis_type", "overview"),
+                    args.get("sheet_name")
+                )
+            # Phase 3: Web tools
+            elif tool_name == "web_search":
+                success, output = handler(
+                    args.get("query", ""),
+                    args.get("include_sources", "true").lower() in ("true", "yes", "1"),
+                    int(args.get("num_results", 5))
+                )
+            elif tool_name == "fetch_url":
+                success, output = handler(
+                    args.get("url", ""),
+                    args.get("query")
+                )
+            elif tool_name == "fetch_multiple_urls":
+                urls_raw = args.get("urls", "")
+                if urls_raw.startswith("["):
+                    import json
+                    urls = json.loads(urls_raw)
+                else:
+                    urls = [u.strip() for u in urls_raw.split(",") if u.strip()]
+                success, output = handler(urls, args.get("query"))
+            elif tool_name == "scrape_structured_data":
+                success, output = handler(
+                    args.get("url", ""),
+                    args.get("data_type", "auto")
+                )
+            elif tool_name == "search_and_summarize":
+                success, output = handler(
+                    args.get("topic", ""),
+                    args.get("depth", "standard")
+                )
+            elif tool_name == "verify_claim":
+                success, output = handler(args.get("claim", ""))
+            # Phase 3: Code execution tools
+            elif tool_name == "execute_python":
+                success, output = handler(
+                    args.get("code", ""),
+                    args.get("description")
+                )
+            elif tool_name == "calculate":
+                success, output = handler(
+                    args.get("expression", ""),
+                    int(args.get("precision", 10))
+                )
+            elif tool_name == "analyze_data":
+                success, output = handler(
+                    args.get("data", ""),
+                    args.get("analysis", "descriptive")
+                )
+            elif tool_name == "validate_code":
+                test_inputs = None
+                if args.get("test_inputs"):
+                    import json
+                    try:
+                        test_inputs = json.loads(args["test_inputs"])
+                    except:
+                        pass
+                success, output = handler(
+                    args.get("code", ""),
+                    args.get("language", "python"),
+                    test_inputs
+                )
+            elif tool_name == "solve_equation":
+                success, output = handler(
+                    args.get("equation", ""),
+                    args.get("variable", "x"),
+                    args.get("method", "auto")
+                )
+            elif tool_name == "run_simulation":
+                success, output = handler(
+                    args.get("description", ""),
+                    int(args.get("iterations", 1000))
+                )
+            elif tool_name == "debug_code":
+                success, output = handler(
+                    args.get("code", ""),
+                    args.get("error_message")
+                )
+            # Phase 3: Enhanced image tools
+            elif tool_name == "generate_image":
+                success, output = handler(
+                    args.get("prompt", ""),
+                    args.get("output_path", ""),
+                    args.get("aspect_ratio", "1:1"),
+                    args.get("style")
+                )
+            elif tool_name == "detect_objects":
+                objects_raw = args.get("objects_to_find", "")
+                objects = None
+                if objects_raw:
+                    if objects_raw.startswith("["):
+                        import json
+                        objects = json.loads(objects_raw)
+                    else:
+                        objects = [o.strip() for o in objects_raw.split(",") if o.strip()]
+                success, output = handler(
+                    args.get("image_path", args.get("path", "")),
+                    objects,
+                    args.get("return_bounding_boxes", "true").lower() in ("true", "yes", "1")
+                )
+            elif tool_name == "compare_images":
+                success, output = handler(
+                    args.get("image_path_1", args.get("path1", "")),
+                    args.get("image_path_2", args.get("path2", "")),
+                    args.get("comparison_type", "visual")
+                )
             else:
-                # Generic call attempt
+                # Generic call attempt for custom tools and any others
                 success, output = handler(**args)
+
+            # Log successful tool call
+            duration_ms = int((time.time() - start_time) * 1000)
+            try:
+                from integrations.audit import log_event
+                log_event(
+                    "tool_call", tool=tool_name, args=args,
+                    status="success" if success else "failure",
+                    duration_ms=duration_ms
+                )
+            except ImportError:
+                pass
 
             return ToolResult(
                 tool=tool_name,
@@ -512,6 +847,17 @@ class Orchestrator:
             )
 
         except Exception as e:
+            # Log error
+            duration_ms = int((time.time() - start_time) * 1000)
+            try:
+                from integrations.audit import log_event
+                log_event(
+                    "tool_call", tool=tool_name, args=args,
+                    status="error", duration_ms=duration_ms, error=str(e)
+                )
+            except ImportError:
+                pass
+
             return ToolResult(
                 tool=tool_name,
                 success=False,

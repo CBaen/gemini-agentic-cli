@@ -132,6 +132,45 @@ This fix was essential - the entire lineage research pipeline depended on it.
 
 ---
 
+## Research Session: January 15, 2026
+
+### Gemini Multimodal Capabilities (Stored in Qdrant: gemini-capabilities-2026-01-15)
+
+**Image Analysis**:
+- OCR: Extract text from images, tables, charts
+- Object Detection: Zero-shot detection with bounding boxes
+- Visual Q&A: Answer questions about image content
+- Formats: PNG, JPEG, BMP, WebP (up to 15MB, 24 megapixels)
+
+**Image Generation (Imagen)**:
+- Aspect ratios: 21:9, 16:9, 4:3, 3:2, 1:1, 2:3, 3:4, 9:16, 9:21
+- Default resolution: 1024px
+- Text in images: 25 chars or less recommended
+- Limitations: spatial reasoning, medical images, non-Latin text
+
+**Video Analysis**:
+- 1M context = ~1 hour of video
+- Timestamp queries: Format MM:SS
+- Frame extraction: Configurable FPS (default 1 FPS)
+- Up to 10 videos per request, YouTube URLs supported
+
+**Audio/Speech**:
+- STT: Up to 9.5 hours, speaker diarization, 24+ languages
+- TTS: Adjustable style, tone, pace, multilingual
+- Live API: Real-time bidirectional voice via WebSockets
+
+**Document Processing**:
+- PDF: 1,000 pages or 50MB, visual layout comprehension
+- Excel: 100MB, pattern recognition, calculations
+- Word: Headings, tables, charts, footnotes
+
+**Web Capabilities**:
+- Google Search grounding: Enable via `googleSearch: {}` in tools
+- URL Fetching: Up to 20 URLs/request, 34MB per URL
+- Python sandbox: 30-second strict timeout
+
+---
+
 ## Future Considerations
 
 ### Things to Research Later
@@ -139,6 +178,23 @@ This fix was essential - the entire lineage research pipeline depended on it.
 - Image editing (inpainting/outpainting) workflows
 - Multi-agent self-orchestration patterns
 - VS Code extension integration
+
+### Subagent Script Access - CONFIRMED WORKING (January 15, 2026)
+
+**Issue investigated**: Early Haiku subagent claimed it couldn't access lineage scripts.
+
+**Finding**: Scripts ARE accessible from subagents. Verified:
+- `~/.claude/scripts/gemini-account.sh` - works, can query Gemini
+- `python ~/.claude/scripts/qdrant-semantic-search.py` - works, can query Qdrant
+
+**Root cause of confusion**: The first subagent may have:
+- Not actually attempted to run the commands
+- Assumed scripts weren't available without checking
+- Been confused by the task complexity
+
+**Fix applied**: Added `**CAPABILITY NOTICE: You have BASH access...**` to all supervisor prompts. This explicitly tells subagents they have bash access and should use it.
+
+---
 
 ### Things NOT to Do
 - Don't bypass security layer for convenience

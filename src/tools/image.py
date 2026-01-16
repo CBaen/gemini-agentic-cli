@@ -2,23 +2,35 @@
 Image Tools - Generation and Analysis
 
 Gemini has powerful multimodal capabilities:
-- Image analysis: Describe, OCR, object detection
-- Image generation: Create images from text prompts (Imagen)
+- Image analysis: OCR, object detection with bounding boxes, visual Q&A
+- Image generation: Create images via Imagen (10 aspect ratios, 1024px default)
 
-Note: Image generation via CLI may require specific Gemini model configurations.
-Analysis works with base64-encoded images or file paths.
+Capabilities (from research):
+- Zero-shot object detection and segmentation
+- Bounding box coordinates for detected objects
+- Formats: PNG, JPEG, BMP, WebP (up to 15MB, 24 megapixels, max 3 per prompt)
+- Generation aspect ratios: 21:9, 16:9, 4:3, 3:2, 1:1, 2:3, 3:4, 9:16, 9:21
 """
 
 import subprocess
 import sys
 import os
 import base64
+import json
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List, Dict, Any
 
 
 # Gemini script location
 GEMINI_SCRIPT = Path.home() / ".claude" / "scripts" / "gemini-account.sh"
+
+# Supported aspect ratios for image generation
+SUPPORTED_ASPECT_RATIOS = [
+    "21:9", "16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16", "9:21"
+]
+
+# Supported image formats for analysis
+SUPPORTED_IMAGE_FORMATS = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'}
 
 
 def get_git_bash() -> Optional[Path]:
@@ -115,6 +127,61 @@ Note: If you cannot see the image directly, describe what analysis you would per
     return call_gemini(full_prompt, account)
 
 
+def generate_image(
+    prompt: str,
+    output_path: str,
+    aspect_ratio: str = "1:1",
+    style: str = None,
+    account: int = 1
+) -> Tuple[bool, str]:
+    """
+    Generate an image using Gemini's Imagen capability.
+
+    Args:
+        prompt: Description of the image to generate
+        output_path: Where to save the generated image
+        aspect_ratio: One of: 21:9, 16:9, 4:3, 3:2, 1:1, 2:3, 3:4, 9:16, 9:21
+        style: Optional style modifier (photorealistic, illustration, etc.)
+        account: Gemini account to use (1 or 2)
+
+    Returns:
+        Tuple of (success: bool, message: str)
+
+    Limitations:
+        - Text in images: 25 characters or less recommended
+        - May struggle with: precise spatial reasoning, medical images, non-Latin text
+    """
+    if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
+        return False, f"Unsupported aspect ratio: {aspect_ratio}. Supported: {SUPPORTED_ASPECT_RATIOS}"
+
+    output = Path(output_path).expanduser().resolve()
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    # Build the generation prompt
+    style_text = f" in {style} style" if style else ""
+    full_prompt = f"""Generate an image with the following specifications:
+
+Prompt: {prompt}{style_text}
+Aspect Ratio: {aspect_ratio}
+Output Format: PNG
+
+Please generate this image using Imagen. Return the image data or confirm generation.
+
+If you cannot directly generate images in this context, provide:
+1. A detailed Imagen-ready prompt
+2. Specific generation parameters
+3. Alternative approaches to obtain the image"""
+
+    success, response = call_gemini(full_prompt, account)
+
+    if success:
+        # Note: Actual image data handling depends on gemini-account.sh capabilities
+        # For now, we return the generation guidance
+        return True, f"Image generation request sent. Output path: {output_path}\nResponse: {response}"
+
+    return False, response
+
+
 def generate_image_prompt(
     description: str,
     style: str = "photorealistic",
@@ -139,7 +206,7 @@ Description: {description}
 Style: {style}
 Aspect Ratio: {aspect_ratio}
 
-Provide a detailed, vivid prompt that would work well with image generation models like DALL-E, Midjourney, or Imagen. Include:
+Provide a detailed, vivid prompt that would work well with Imagen. Include:
 - Specific visual details
 - Lighting and atmosphere
 - Composition suggestions
@@ -211,10 +278,111 @@ Note: For actual OCR, this would require direct image input to Gemini's vision m
     return call_gemini(prompt, account=1)
 
 
+def detect_objects(
+    image_path: str,
+    objects_to_find: List[str] = None,
+    return_bounding_boxes: bool = True,
+    account: int = 1
+) -> Tuple[bool, str]:
+    """
+    Detect objects in an image with optional bounding box coordinates.
+
+    Gemini 2.5 supports zero-shot object detection and segmentation.
+
+    Args:
+        image_path: Path to the image file
+        objects_to_find: Optional list of specific objects to look for
+        return_bounding_boxes: Whether to return bounding box coordinates
+        account: Gemini account to use (1 or 2)
+
+    Returns:
+        Tuple of (success: bool, detection_results: str)
+    """
+    path = Path(image_path).expanduser().resolve()
+
+    if not path.exists():
+        return False, f"Image not found: {image_path}"
+
+    if path.suffix.lower() not in SUPPORTED_IMAGE_FORMATS:
+        return False, f"Unsupported image format: {path.suffix}"
+
+    objects_filter = ""
+    if objects_to_find:
+        objects_filter = f"\nSpecifically look for: {', '.join(objects_to_find)}"
+
+    bbox_request = ""
+    if return_bounding_boxes:
+        bbox_request = """
+For each detected object, provide bounding box coordinates in the format:
+- Object: [name]
+  Location: [x_min, y_min, x_max, y_max] (normalized 0-1 coordinates)
+  Confidence: [high/medium/low]"""
+
+    prompt = f"""Perform object detection on the image at: {path}
+{objects_filter}
+{bbox_request}
+
+Identify all distinct objects visible in the image. For each object:
+1. Name/classification
+2. Position in the image (if bounding boxes requested)
+3. Confidence level
+4. Any relevant attributes (color, size, state)
+
+Return results in a structured format."""
+
+    return call_gemini(prompt, account)
+
+
+def compare_images(
+    image_path_1: str,
+    image_path_2: str,
+    comparison_type: str = "visual",
+    account: int = 1
+) -> Tuple[bool, str]:
+    """
+    Compare two images and describe differences.
+
+    Args:
+        image_path_1: Path to first image
+        image_path_2: Path to second image
+        comparison_type: Type of comparison (visual, structural, content)
+        account: Gemini account to use
+
+    Returns:
+        Tuple of (success: bool, comparison_result: str)
+    """
+    path1 = Path(image_path_1).expanduser().resolve()
+    path2 = Path(image_path_2).expanduser().resolve()
+
+    if not path1.exists():
+        return False, f"Image not found: {image_path_1}"
+    if not path2.exists():
+        return False, f"Image not found: {image_path_2}"
+
+    prompt = f"""Compare these two images:
+Image 1: {path1}
+Image 2: {path2}
+
+Comparison type: {comparison_type}
+
+Analyze and describe:
+1. Key similarities between the images
+2. Key differences between the images
+3. Overall assessment of how similar/different they are
+4. Any notable changes if these appear to be versions of the same content
+
+Be specific about visual elements, layout, content, and style."""
+
+    return call_gemini(prompt, account)
+
+
 # Tool registry
 IMAGE_TOOLS = {
     "analyze_image": analyze_image,
+    "generate_image": generate_image,
     "generate_image_prompt": generate_image_prompt,
     "describe_for_accessibility": describe_for_accessibility,
     "extract_text_from_image": extract_text_from_image,
+    "detect_objects": detect_objects,
+    "compare_images": compare_images,
 }

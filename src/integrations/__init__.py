@@ -36,6 +36,19 @@ from .claude_collab import (
     create_research_handoff,
     COLLAB_TOOLS,
 )
+from .audit import (
+    log_event,
+    log_session_start,
+    log_session_end,
+    log_security_event,
+    log_error,
+    get_session_stats,
+    search_logs,
+    export_logs,
+    audit_tool,
+    audit_context,
+    AUDIT_TOOLS,
+)
 
 __all__ = [
     # Security
@@ -71,4 +84,16 @@ __all__ = [
     'add_to_shared_memory',
     'create_research_handoff',
     'COLLAB_TOOLS',
+    # Audit
+    'log_event',
+    'log_session_start',
+    'log_session_end',
+    'log_security_event',
+    'log_error',
+    'get_session_stats',
+    'search_logs',
+    'export_logs',
+    'audit_tool',
+    'audit_context',
+    'AUDIT_TOOLS',
 ]
