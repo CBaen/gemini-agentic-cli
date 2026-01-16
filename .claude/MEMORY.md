@@ -52,6 +52,34 @@
 **Why**: Enables asynchronous collaboration. Gemini does research, stores findings. Claude queries findings, makes decisions.
 **Collection**: `lineage_research` for shared research, project-specific collections for project data.
 
+### Decision: Model Routing for Tasks
+**Date**: January 15, 2026
+**What**: Auto-route tasks to the appropriate Gemini model
+**Why**: Different tasks need different models. Image generation requires `gemini-2.5-flash-image`, while text/multimodal uses `gemini-2.5-flash`.
+
+**Model Selection**:
+| Task | Model | Free Quota |
+|------|-------|------------|
+| Text, Chat, Code | gemini-2.5-flash | ~1,000/day |
+| Video/Audio/Document Analysis | gemini-2.5-flash | ~1,000/day |
+| Image Analysis | gemini-2.5-flash | ~1,000/day |
+| **Image Generation** | gemini-2.5-flash-image | **500/day** |
+| Complex Reasoning | gemini-2.5-pro | ~1,000/day |
+
+**Implementation**:
+- `src/core/model_router.py` - Auto-routing logic
+- `gemini-account.sh` now accepts third param for model
+- Image tools auto-select `gemini-2.5-flash-image`
+
+**Usage**:
+```bash
+# Default (gemini-2.5-flash)
+gemini-account.sh 1 "query"
+
+# Specific model
+gemini-account.sh 1 "query" gemini-2.5-flash-image
+```
+
 ---
 
 ## Research Findings

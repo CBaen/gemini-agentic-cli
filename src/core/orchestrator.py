@@ -462,13 +462,19 @@ class Orchestrator:
         """Get the account number for the current turn (alternates 1, 2)."""
         return (self.turn_count % 2) + 1
 
-    def _call_gemini(self, prompt: str, account: Optional[int] = None) -> str:
+    def _call_gemini(
+        self,
+        prompt: str,
+        account: Optional[int] = None,
+        model: Optional[str] = None
+    ) -> str:
         """
         Call Gemini via the shell script.
 
         Args:
             prompt: The prompt to send
             account: Account number (1 or 2). If None, uses rotation.
+            model: Model ID (e.g., 'gemini-2.5-flash'). If None, uses default.
 
         Returns:
             Gemini's response text
@@ -477,6 +483,7 @@ class Orchestrator:
             return "Error: gemini-account.sh not found. Please ensure it exists at ~/.claude/scripts/gemini-account.sh"
 
         acc = account or self._get_account()
+        model_id = model or "gemini-2.5-flash"
 
         # Find Git Bash on Windows for reliable execution
         if sys.platform == 'win32':
@@ -488,7 +495,7 @@ class Orchestrator:
 
             try:
                 result = subprocess.run(
-                    [str(git_bash), self.gemini_script, str(acc), prompt],
+                    [str(git_bash), self.gemini_script, str(acc), prompt, model_id],
                     capture_output=True,
                     text=True,
                     timeout=300,
@@ -501,7 +508,7 @@ class Orchestrator:
         else:
             try:
                 result = subprocess.run(
-                    ["bash", self.gemini_script, str(acc), prompt],
+                    ["bash", self.gemini_script, str(acc), prompt, model_id],
                     capture_output=True,
                     text=True,
                     timeout=300,

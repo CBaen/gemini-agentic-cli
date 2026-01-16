@@ -3,13 +3,17 @@ Image Tools - Generation and Analysis
 
 Gemini has powerful multimodal capabilities:
 - Image analysis: OCR, object detection with bounding boxes, visual Q&A
-- Image generation: Create images via Imagen (10 aspect ratios, 1024px default)
+- Image generation: Create images via gemini-2.5-flash-image (500 free/day)
 
 Capabilities (from research):
 - Zero-shot object detection and segmentation
 - Bounding box coordinates for detected objects
 - Formats: PNG, JPEG, BMP, WebP (up to 15MB, 24 megapixels, max 3 per prompt)
 - Generation aspect ratios: 21:9, 16:9, 4:3, 3:2, 1:1, 2:3, 3:4, 9:16, 9:21
+
+Model Routing:
+- Image analysis: gemini-2.5-flash (default)
+- Image generation: gemini-2.5-flash-image (auto-selected)
 """
 
 import subprocess
@@ -23,6 +27,10 @@ from typing import Tuple, Optional, List, Dict, Any
 
 # Gemini script location
 GEMINI_SCRIPT = Path.home() / ".claude" / "scripts" / "gemini-account.sh"
+
+# Model IDs
+MODEL_FLASH = "gemini-2.5-flash"
+MODEL_FLASH_IMAGE = "gemini-2.5-flash-image"
 
 # Supported aspect ratios for image generation
 SUPPORTED_ASPECT_RATIOS = [
@@ -47,8 +55,24 @@ def get_git_bash() -> Optional[Path]:
     return None
 
 
-def call_gemini(query: str, account: int = 1, timeout: int = 120) -> Tuple[bool, str]:
-    """Call Gemini and return response."""
+def call_gemini(
+    query: str,
+    account: int = 1,
+    timeout: int = 120,
+    model: str = MODEL_FLASH
+) -> Tuple[bool, str]:
+    """
+    Call Gemini and return response.
+
+    Args:
+        query: The prompt to send
+        account: Account number (1 or 2)
+        timeout: Request timeout in seconds
+        model: Model ID (gemini-2.5-flash or gemini-2.5-flash-image)
+
+    Returns:
+        Tuple of (success, response)
+    """
     if not GEMINI_SCRIPT.exists():
         return False, f"gemini-account.sh not found"
 
@@ -57,9 +81,9 @@ def call_gemini(query: str, account: int = 1, timeout: int = 120) -> Tuple[bool,
             git_bash = get_git_bash()
             if not git_bash:
                 return False, "Git Bash not found"
-            cmd = [str(git_bash), str(GEMINI_SCRIPT), str(account), query]
+            cmd = [str(git_bash), str(GEMINI_SCRIPT), str(account), query, model]
         else:
-            cmd = ["bash", str(GEMINI_SCRIPT), str(account), query]
+            cmd = ["bash", str(GEMINI_SCRIPT), str(account), query, model]
 
         result = subprocess.run(
             cmd,
@@ -135,7 +159,9 @@ def generate_image(
     account: int = 1
 ) -> Tuple[bool, str]:
     """
-    Generate an image using Gemini's Imagen capability.
+    Generate an image using gemini-2.5-flash-image model.
+
+    This automatically uses the image generation model (500 free images/day).
 
     Args:
         prompt: Description of the image to generate
@@ -146,6 +172,9 @@ def generate_image(
 
     Returns:
         Tuple of (success: bool, message: str)
+
+    Model: gemini-2.5-flash-image (auto-selected)
+    Free quota: 500 images per day
 
     Limitations:
         - Text in images: 25 characters or less recommended
@@ -165,19 +194,13 @@ Prompt: {prompt}{style_text}
 Aspect Ratio: {aspect_ratio}
 Output Format: PNG
 
-Please generate this image using Imagen. Return the image data or confirm generation.
+Please generate this image. Return the image data or confirm generation."""
 
-If you cannot directly generate images in this context, provide:
-1. A detailed Imagen-ready prompt
-2. Specific generation parameters
-3. Alternative approaches to obtain the image"""
-
-    success, response = call_gemini(full_prompt, account)
+    # Use the image generation model (gemini-2.5-flash-image)
+    success, response = call_gemini(full_prompt, account, model=MODEL_FLASH_IMAGE)
 
     if success:
-        # Note: Actual image data handling depends on gemini-account.sh capabilities
-        # For now, we return the generation guidance
-        return True, f"Image generation request sent. Output path: {output_path}\nResponse: {response}"
+        return True, f"Image generation request sent using {MODEL_FLASH_IMAGE}.\nOutput path: {output_path}\nResponse: {response}"
 
     return False, response
 
