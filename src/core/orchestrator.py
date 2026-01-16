@@ -104,11 +104,20 @@ class Orchestrator:
 
         # Core filesystem tools
         try:
-            from tools.filesystem import read_file, write_file, edit_file, list_directory
+            from tools.filesystem import (
+                read_file, write_file, edit_file, delete_file,
+                delete_directory, create_directory, move_file, copy_file,
+                list_directory
+            )
             registry.update({
                 "read_file": read_file,
                 "write_file": write_file,
                 "edit_file": edit_file,
+                "delete_file": delete_file,
+                "delete_directory": delete_directory,
+                "create_directory": create_directory,
+                "move_file": move_file,
+                "copy_file": copy_file,
                 "list_directory": list_directory,
             })
         except ImportError as e:
@@ -185,21 +194,53 @@ class Orchestrator:
         tool_name = tool_call.tool
         args = tool_call.args
 
-        # File operations
-        if tool_name in ('read_file', 'write_file', 'edit_file', 'list_directory'):
+        # File operations (single path)
+        file_ops_single = {
+            'read_file': 'read',
+            'write_file': 'write',
+            'edit_file': 'edit',
+            'delete_file': 'delete',
+            'delete_directory': 'delete',
+            'create_directory': 'create',
+            'list_directory': 'list',
+        }
+
+        # File operations (two paths: source and destination)
+        file_ops_dual = {
+            'move_file': 'move',
+            'copy_file': 'copy',
+        }
+
+        if tool_name in file_ops_single:
             path = args.get('path', '.')
-            operation = tool_name.split('_')[0]  # read, write, edit, list
+            operation = file_ops_single[tool_name]
 
             result = check_file_operation(operation, path)
 
             if not result.allowed:
                 return False, result.message
 
-            # Request confirmation for write operations
+            # Request confirmation for modifying operations
             if result.requires_confirmation:
                 details = f"{tool_name} on {path}"
                 if not request_confirmation(tool_name, details):
                     return False, "User denied operation"
+
+        elif tool_name in file_ops_dual:
+            source = args.get('source', '')
+            destination = args.get('destination', '')
+            operation = file_ops_dual[tool_name]
+
+            # Check both paths
+            for check_path in [source, destination]:
+                result = check_file_operation(operation, check_path)
+                if not result.allowed:
+                    return False, result.message
+
+            # Request confirmation
+            details = f"{tool_name}: {source} -> {destination}"
+            if not request_confirmation(tool_name, details):
+                return False, "User denied operation"
 
         # Command execution
         elif tool_name == 'run_command':
@@ -330,6 +371,17 @@ class Orchestrator:
                 )
             elif tool_name == "list_directory":
                 success, output = handler(args.get("path", "."))
+            elif tool_name == "delete_file":
+                success, output = handler(args.get("path", ""))
+            elif tool_name == "delete_directory":
+                recursive = args.get("recursive", "false").lower() in ("true", "yes", "1")
+                success, output = handler(args.get("path", ""), recursive)
+            elif tool_name == "create_directory":
+                success, output = handler(args.get("path", ""))
+            elif tool_name == "move_file":
+                success, output = handler(args.get("source", ""), args.get("destination", ""))
+            elif tool_name == "copy_file":
+                success, output = handler(args.get("source", ""), args.get("destination", ""))
             elif tool_name == "run_command":
                 success, output = handler(args.get("cmd", ""))
             elif tool_name == "search_code":

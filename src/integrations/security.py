@@ -255,9 +255,14 @@ def validate_command(cmd: str) -> Tuple[bool, str]:
 
 # Operations that require user confirmation
 OPERATIONS_REQUIRING_CONFIRMATION = [
-    'write_file',      # Creating/overwriting files
-    'edit_file',       # Modifying files
-    'run_command',     # Any shell command (optional, can be disabled)
+    'write_file',           # Creating/overwriting files
+    'edit_file',            # Modifying files
+    'delete_file',          # Deleting files
+    'delete_directory',     # Deleting directories
+    'move_file',            # Moving/renaming files
+    'copy_file',            # Copying files
+    'create_directory',     # Creating directories
+    'run_command',          # Any shell command
 ]
 
 # Confirmation callback - set by orchestrator
@@ -319,7 +324,7 @@ def check_file_operation(
     Check if a file operation is allowed.
 
     Args:
-        operation: 'read', 'write', 'edit', 'list'
+        operation: 'read', 'write', 'edit', 'delete', 'move', 'copy', 'create', 'list'
         path: The file/directory path
         content: Optional content for write operations
 
@@ -335,8 +340,8 @@ def check_file_operation(
             canonical_path=None
         )
 
-    # Check if confirmation needed
-    needs_confirm = operation in ['write', 'edit']
+    # Check if confirmation needed (all modifying operations)
+    needs_confirm = operation in ['write', 'edit', 'delete', 'move', 'copy', 'create']
 
     return SecurityCheckResult(
         allowed=True,
