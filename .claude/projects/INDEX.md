@@ -25,14 +25,22 @@ Quick-scan list. Load individual files only when working on one.
 | M30 | M&A Prediction | backlog | - |
 | C01 | Orchestrator Architecture | backlog | - |
 | C02 | Task Routing Patterns | backlog | - |
-| L01 | Ollama Embedding Optimization | backlog | - |
-| L02 | Gemini Prompt Engineering | backlog | - |
-| L03 | Qdrant Batch Operations | backlog | - |
+| L01 | Ollama Embedding Optimization | done | @claude |
+| L02 | Gemini Prompt Engineering | done | @claude |
+| L03 | Qdrant Batch Operations | done | @claude |
 | L04 | Auto-Discovery Before Research | backlog | - |
 | L05 | Subagent Summary Validation | backlog | - |
 | L06 | Code Indexing for Qdrant | backlog | - |
 | L07 | Embedding Model Comparison | backlog | - |
 | L08 | Gemini Worker Health Monitoring | backlog | - |
+| L09 | Context Window Management | backlog | - |
+| L10 | Cross-Project Knowledge Sharing | backlog | - |
+| L11 | Handoff Protocol Optimization | backlog | - |
+| L12 | Decay Rate Tuning | backlog | - |
+| L13 | Subagent Task Distribution | backlog | - |
+| L14 | Error Recovery Patterns | backlog | - |
+| L15 | Research Synthesis Patterns | backlog | - |
+| L16 | Session Continuity Patterns | backlog | - |
 
 **Status**: `backlog` → `active` → `done` | `blocked`
 
