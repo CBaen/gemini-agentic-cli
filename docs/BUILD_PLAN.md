@@ -323,7 +323,7 @@ You'll know Phase 1 is complete when:
 **Goal**: Make the CLI actually useful and safe for real work.
 
 ### Task 2.1: Code Search (Ripgrep)
-**Status**: `[ ] Not Started`
+**Status**: `[x] Complete`
 **Depends on**: Task 1.3 (Core Tools)
 **File**: `src/tools/search.py`
 
@@ -345,7 +345,7 @@ def search_code(pattern: str, path: str = ".") -> str:
 ---
 
 ### Task 2.2: Edit Tool
-**Status**: `[ ] Not Started`
+**Status**: `[x] Complete`
 **Depends on**: Task 1.3 (Core Tools)
 **File**: `src/tools/filesystem.py` (extend)
 
@@ -367,7 +367,7 @@ def edit_file(path: str, old_text: str, new_text: str) -> str:
 ---
 
 ### Task 2.3: Security Layer
-**Status**: `[ ] Not Started`
+**Status**: `[x] Complete`
 **Depends on**: Task 1.3 (Core Tools)
 **Files**: `src/integrations/security.py`
 
@@ -422,7 +422,7 @@ def edit_file(path: str, old_text: str, new_text: str) -> str:
 ---
 
 ### Task 2.4: Session Lifecycle
-**Status**: `[ ] Not Started`
+**Status**: `[x] Complete`
 **Depends on**: Task 1.4 (Conversation Memory)
 **Files**: `src/integrations/session.py`
 
@@ -453,7 +453,7 @@ def edit_file(path: str, old_text: str, new_text: str) -> str:
 ---
 
 ### Task 2.5: Qdrant Integration
-**Status**: `[ ] Not Started`
+**Status**: `[x] Complete`
 **Depends on**: Task 1.3 (Core Tools)
 **Files**: `src/integrations/qdrant_client.py`
 

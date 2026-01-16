@@ -1,13 +1,13 @@
 # Handoff: Gemini Agentic CLI
 
 *Last Updated: January 15, 2026*
-*Last Instance: Phase 1 Implementation Complete*
+*Last Instance: Phase 2 Implementation Complete*
 
 ---
 
 ## Welcome, Next Builder
 
-Phase 1 is complete. The CLI is functional and ready for testing with real Gemini calls.
+Phases 1 and 2 are complete. The CLI is functional with security guardrails.
 
 ---
 
@@ -15,10 +15,6 @@ Phase 1 is complete. The CLI is functional and ready for testing with real Gemin
 
 Before testing, verify:
 
-- [ ] **Qdrant running** at localhost:6333
-  ```bash
-  docker ps --filter "name=qdrant"  # Should show running container
-  ```
 - [ ] **Gemini accounts authenticated**
   ```bash
   ~/.claude/scripts/gemini-account.sh 1 'echo test'  # Should respond
@@ -28,161 +24,132 @@ Before testing, verify:
   ```bash
   ls "C:/Program Files/Git/usr/bin/bash.exe"  # Should exist
   ```
-
----
-
-## Security Warning
-
-```
-⚠️  PHASE 1 HAS NO SECURITY LAYER
-
-The current implementation does NOT include:
-- Sandboxing to project root
-- Command whitelisting
-- Confirmation prompts
-- Path traversal protection
-
-DO NOT use Phase 1 for sensitive work or on production systems.
-Phase 2 adds the security layer. Wait until then for real work.
-```
+- [ ] **Ripgrep installed** (for code search)
+  ```bash
+  rg --version  # Should show version
+  ```
+- [ ] **Qdrant running** (optional, for collaboration features)
+  ```bash
+  curl http://localhost:6333/collections
+  ```
 
 ---
 
 ## Current State
 
-**Phase**: Phase 1 Complete
-**Status**: Ready for live testing
+**Phase**: Phase 2 Complete
+**Status**: Ready for production testing
 
 ### What's Been Built
 
-1. **Tool Protocol** (`src/core/tool_protocol.py`)
-   - Text-based parsing: `TOOL_CALL: tool | param=value`
-   - Result formatting: `TOOL_RESULT: tool | status=success | output=...`
-   - Escaping for pipes and multiline content
-   - System prompt builder with tool descriptions
+**Phase 1 - MVP**
+1. Tool Protocol (`src/core/tool_protocol.py`) - Text-based parsing
+2. Conversation Memory (`src/core/memory.py`) - JSON persistence
+3. Filesystem Tools (`src/tools/filesystem.py`) - read, write, list
+4. Shell Tool (`src/tools/shell.py`) - Command execution
 
-2. **Conversation Memory** (`src/core/memory.py`)
-   - JSON persistence at `~/.gemini-cli/conversation_history.json`
-   - Load/save/clear operations
-   - History formatting for prompts
-   - Session info tracking
-
-3. **Filesystem Tools** (`src/tools/filesystem.py`)
-   - `read_file(path)` - Read file contents
-   - `write_file(path, content)` - Write to file
-   - `list_directory(path)` - List directory with file sizes
-
-4. **Shell Tool** (`src/tools/shell.py`)
-   - `run_command(cmd)` - Execute shell commands
-   - Captures stdout, stderr, exit code
-   - 2-minute timeout
-   - Cross-platform (Windows/Unix)
-
-5. **Orchestrator** (`src/core/orchestrator.py`)
-   - Main agentic loop
-   - Gemini calls via `gemini-account.sh`
-   - Tool call parsing and execution
-   - Account rotation (alternates 1, 2)
-   - Max 10 iterations per turn (safety limit)
-
-6. **Main Entry Point** (`src/main.py`)
-   - Banner and security warning
-   - Prerequisite checking
-   - REPL loop with commands: exit, clear, history
-
-### Tests Run
-
-- All modules import successfully
-- Tool protocol parses correctly
-- Filesystem tools read/list correctly
-- CLI starts and displays prompts
+**Phase 2 - Security & Enhancement**
+5. Search Tools (`src/tools/search.py`) - ripgrep integration
+6. Edit Tool (`src/tools/filesystem.py`) - Surgical file edits
+7. Security Layer (`src/integrations/security.py`)
+   - Path sandboxing to project root
+   - Command whitelisting (git, python, npm, etc.)
+   - Sensitive file protection (.env, .ssh, credentials)
+   - Confirmation prompts for destructive operations
+8. Session Lifecycle (`src/integrations/session.py`)
+   - Crash recovery via PID file
+   - HANDOFF.md and MEMORY.md integration
+9. Qdrant Integration (`src/integrations/qdrant_client.py`)
+   - Query research archive
+   - Store findings for Claude collaboration
 
 ---
 
-## How to Test
+## How to Use
 
 ```bash
 cd C:/Users/baenb/projects/gemini-agentic-cli
 python src/main.py
 ```
 
-Try these prompts:
-1. "List the files in the src directory"
-2. "Read the file CLAUDE.md and summarize it"
-3. "What Python files are in this project?"
-4. "Create a test file called hello.txt with 'Hello World'"
+**Commands:**
+- `exit` / `quit` - Leave the CLI
+- `clear` - Reset conversation history
+- `history` - Show session statistics
+- `security` - Toggle security layer on/off
+
+**Available Tools (for Gemini):**
+- `read_file` - Read file contents
+- `write_file` - Create/overwrite files
+- `edit_file` - Surgical text replacement
+- `list_directory` - List directory contents
+- `run_command` - Execute shell commands
+- `search_code` - Search with ripgrep
+- `search_files` - Find files by pattern
+- `grep_count` - Count pattern occurrences
+- `query_research` - Query Qdrant archive
+- `store_research` - Store to Qdrant
+
+---
+
+## Security Features
+
+The CLI now includes:
+
+1. **Path Sandboxing**: All file operations restricted to project root
+2. **Command Whitelisting**: Only approved commands (git, python, npm, etc.)
+3. **Sensitive File Protection**: Blocks .env, .ssh, credentials, etc.
+4. **Confirmation Prompts**: Asks before write operations and commands
+
+Toggle security with the `security` command in the REPL.
 
 ---
 
 ## Next Steps
 
-**Your mission**: Either test Phase 1 with real Gemini calls, or begin Phase 2.
+**Your mission**: Test with real Gemini calls, or begin Phase 3.
 
-### Option A: Test Phase 1
+### Option A: Production Testing
 - Run the CLI with real prompts
-- Verify tool execution works
-- Check conversation history persists
-- Document any issues
+- Test security blocks (try to read .env, run rm -rf)
+- Test confirmation prompts
+- Verify code search works
 
-### Option B: Begin Phase 2
-See `docs/BUILD_PLAN.md` for Phase 2 tasks:
-- Task 2.1: Code Search (ripgrep)
-- Task 2.2: Edit Tool (surgical edits)
-- Task 2.3: Security Layer (sandboxing, whitelisting)
-- Task 2.4: Session Lifecycle
-- Task 2.5: Qdrant Integration
-
-The security layer (Task 2.3) should be prioritized - it makes the CLI safe for real work.
-
----
-
-## Key Design Decisions Made
-
-1. **Git Bash on Windows**: Uses `C:/Program Files/Git/usr/bin/bash.exe` explicitly to avoid WSL bash conflicts
-
-2. **Account rotation per turn**: Odd turns use account 1, even use account 2. Tool calls within a turn use the same account.
-
-3. **Max 10 iterations**: Safety limit to prevent infinite tool loops
-
-4. **Graceful errors**: All tool failures return error messages, never crash. Gemini decides how to proceed.
+### Option B: Begin Phase 3
+See `docs/BUILD_PLAN.md` for Phase 3 tasks:
+- Task 3.1: Parallel Sub-Instance Spawning
+- Task 3.2: Image Generation/Analysis
+- Task 3.3: Claude Collaboration Protocol
+- Task 3.4: Custom Tool Definition
+- Task 3.5: Comprehensive Audit Logging
 
 ---
 
 ## Files Changed This Session
 
 ```
-src/core/tool_protocol.py  [NEW]
-src/core/memory.py         [NEW]
-src/core/orchestrator.py   [NEW]
-src/core/__init__.py       [UPDATED]
-src/tools/filesystem.py    [NEW]
-src/tools/shell.py         [NEW]
-src/tools/__init__.py      [UPDATED]
-src/main.py                [UPDATED]
-docs/BUILD_PLAN.md         [UPDATED - marked Phase 1 complete]
+src/tools/search.py        [NEW] - Ripgrep integration
+src/tools/filesystem.py    [UPDATED] - Added edit_file
+src/tools/__init__.py      [UPDATED] - Export new tools
+src/integrations/security.py   [NEW] - Security layer
+src/integrations/session.py    [NEW] - Session lifecycle
+src/integrations/qdrant_client.py [NEW] - Qdrant bridge
+src/integrations/__init__.py   [UPDATED] - Export modules
+src/core/orchestrator.py   [UPDATED] - Security integration
+src/main.py                [UPDATED] - Security status display
+docs/BUILD_PLAN.md         [UPDATED] - Marked Phase 2 complete
 ```
 
 ---
 
-## Before You Leave
+## Key Design Decisions
 
-When your session ends:
-
-1. **Update this file** with:
-   - What you completed
-   - What's next
-   - Any blockers or learnings
-
-2. **Update MEMORY.md** if you made significant decisions
-
-3. **Commit your work**
-   ```bash
-   git add .
-   git commit -m "Your description"
-   git push
-   ```
+1. **Security by default**: Security layer enabled on startup
+2. **Confirmation for writes**: All write_file and edit_file prompt user
+3. **Whitelisted commands**: Extensive list of safe dev commands
+4. **Graceful degradation**: Optional modules (Qdrant, search) don't break startup
 
 ---
 
-*Phase 1 built by a Claude instance on January 15, 2026.*
-*The foundation is laid. Build well.*
+*Phases 1-2 built by a Claude instance on January 15, 2026.*
+*Security is not optional. Build responsibly.*

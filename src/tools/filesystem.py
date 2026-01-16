@@ -123,6 +123,64 @@ def list_directory(path: str = ".") -> Tuple[bool, str]:
         return False, f"Error listing directory: {e}"
 
 
+def edit_file(path: str, old_text: str, new_text: str) -> Tuple[bool, str]:
+    """
+    Make a surgical edit to a file by replacing old_text with new_text.
+
+    This is safer than write_file for modifications because it:
+    1. Verifies the old_text exists (prevents blind overwrites)
+    2. Only replaces the first occurrence (predictable behavior)
+    3. Preserves the rest of the file exactly
+
+    Args:
+        path: Path to the file to edit
+        old_text: The exact text to find and replace
+        new_text: The text to replace it with
+
+    Returns:
+        Tuple of (success: bool, message: str)
+    """
+    try:
+        file_path = Path(path).expanduser().resolve()
+
+        if not file_path.exists():
+            return False, f"File not found: {path}"
+
+        if not file_path.is_file():
+            return False, f"Not a file: {path}"
+
+        # Read current content
+        try:
+            content = file_path.read_text(encoding='utf-8')
+        except UnicodeDecodeError:
+            content = file_path.read_text(encoding='latin-1')
+
+        # Check if old_text exists
+        if old_text not in content:
+            # Provide helpful context
+            preview = content[:500] + "..." if len(content) > 500 else content
+            return False, f"old_text not found in {path}. File preview:\n{preview}"
+
+        # Check for multiple occurrences (warn but proceed)
+        occurrences = content.count(old_text)
+        warning = ""
+        if occurrences > 1:
+            warning = f" (Note: {occurrences} occurrences found, only first replaced)"
+
+        # Replace first occurrence only
+        new_content = content.replace(old_text, new_text, 1)
+
+        # Write back
+        file_path.write_text(new_content, encoding='utf-8')
+
+        return True, f"Successfully edited {path}{warning}"
+
+    except PermissionError:
+        return False, f"Permission denied: {path}"
+    except Exception as e:
+        return False, f"Error editing file: {e}"
+
+
 def file_exists(path: str) -> bool:
     """Check if a file exists."""
     try:
@@ -144,5 +202,6 @@ def directory_exists(path: str) -> bool:
 FILESYSTEM_TOOLS = {
     "read_file": read_file,
     "write_file": write_file,
+    "edit_file": edit_file,
     "list_directory": list_directory,
 }

@@ -12,6 +12,7 @@ Commands:
     exit, quit  - Exit the CLI
     clear       - Clear conversation history
     history     - Show session statistics
+    security    - Toggle security layer on/off
 
 See docs/BUILD_PLAN.md for the full implementation guide.
 """
@@ -34,12 +35,11 @@ def print_banner():
     print()
 
 
-def print_security_warning():
-    """Print Phase 1 security warning."""
+def print_security_status():
+    """Print security status."""
     print("+" + "-" * 58 + "+")
-    print("|  WARNING: Phase 1 has NO security layer.               |")
-    print("|  Do not use for sensitive work or on production.       |")
-    print("|  Security (sandboxing, whitelisting) comes in Phase 2. |")
+    print("|  Security: Path sandboxing and command whitelisting    |")
+    print("|  enabled by default. Type 'security' to toggle.        |")
     print("+" + "-" * 58 + "+")
     print()
 
@@ -86,7 +86,7 @@ def main():
     Loads history, initializes the orchestrator, and runs the REPL.
     """
     print_banner()
-    print_security_warning()
+    print_security_status()
 
     # Check prerequisites
     if not check_prerequisites():
