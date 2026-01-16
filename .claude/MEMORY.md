@@ -113,6 +113,23 @@ If Gemini returns empty response, check:
 2. Rate limiting (switch accounts)
 3. Query complexity (simplify)
 
+### Windows Pipe Issue (FIXED)
+**Date**: January 15, 2026
+**Problem**: `gemini-account.sh 1 'query' | python qdrant-store-gemini.py` returned empty input on Windows.
+**Root Cause**: Windows subprocess pipes don't work reliably. Also, Python found WSL bash instead of Git Bash.
+**Solution**: Created `~/.claude/scripts/gemini-research-store.py` - a Windows-compatible wrapper that:
+1. Finds Git Bash explicitly (`C:\Program Files\Git\usr\bin\bash.exe`)
+2. Captures Gemini output to temp file
+3. Passes to qdrant-store-gemini.py via `--input-file`
+4. Cleans up automatically
+
+**Usage**:
+```bash
+python ~/.claude/scripts/gemini-research-store.py -a 1 -c lineage_research -s "session-name" -q "Your query"
+```
+
+This fix was essential - the entire lineage research pipeline depended on it.
+
 ---
 
 ## Future Considerations
