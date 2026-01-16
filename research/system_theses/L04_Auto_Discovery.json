@@ -1,0 +1,23 @@
+Loaded cached credentials.
+```json
+{
+  "thesis_id": "L04",
+  "threshold_analysis": {
+    "high_confidence": 0.9,
+    "partial_match": 0.75,
+    "reasoning": "0.9 ensures near-identical content; 0.75 allows for related but not exact matches, useful for identifying partially overlapping research."
+  },
+  "pre_check_pattern": {
+    "query_structure": "Semantic search with a high threshold, filtering metadata to ensure relevance (e.g., date, source).",
+    "code_example": "```python\nfrom qdrant_client import QdrantClient, models\n\nclient = QdrantClient(host='localhost', port=6333)\n\nquery_vector = your_embedding_function(\"your research query\")\n\nhits = client.search(\n    collection_name=\"your_collection\",\n    query_vector=query_vector,\n    limit=5, # Return top 5 results\n    query_filter=models.Filter(\n        must=[\n            models.FieldCondition(\n                key=\"date\", # Or other relevant metadata\n                match=models.MatchRange(gte=start_date, lte=end_date)\n            )\n        ]\n    ),\n    score_threshold=0.75 #Consider adjusting as needed\n)\n\nfor hit in hits:\n    print(f\"Score: {hit.score}, Payload: {hit.payload}\")\n```"
+  },
+  "gap_filling": {
+    "prompt_pattern": "Using the existing research as context, ask Gemini to 'fill in the gaps' or 'address the following aspects not covered in the previous research: [list gaps]'. Be specific about what is missing."
+  },
+  "staleness_handling": {
+    "approach": "Decay rates based on time or version-based invalidation when source data changes.",
+    "implementation": "Implement a decay function that reduces the relevance score of research points over time. Alternatively, track the version of the source data and invalidate research points when the source is updated. Store 'last_updated' or 'version' in Qdrant metadata."
+  },
+  "integration_point": "Immediately before Gemini conducts new research. Check Qdrant for existing research and proceed only if no high-confidence matches are found."
+}
+```

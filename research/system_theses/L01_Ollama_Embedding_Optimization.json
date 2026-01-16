@@ -1,0 +1,87 @@
+{
+  "thesis_id": "L01",
+  "title": "Ollama Embedding Optimization",
+  "current_state": "2.4s per embedding with nomic-embed-text",
+  "root_causes": [
+    "Inadequate hardware acceleration (CPU only)",
+    "Single-threaded embedding calls",
+    "Suboptimal embedding model for the specific hardware",
+    "Lack of caching mechanisms",
+    "Inefficient data transfer between CPU and GPU (if GPU is used)"
+  ],
+  "recommendations": [
+    {
+      "priority": 1,
+      "action": "Enable GPU acceleration for Ollama",
+      "expected_improvement": "5-10x faster embedding",
+      "implementation": "1. Verify that your GPU drivers are up to date. 2. Configure Ollama to use the GPU by setting the OLLAMA_NUM_GPU environment variable. Example: `set OLLAMA_NUM_GPU=1` before running Ollama. 3. Monitor GPU utilization during embedding to confirm it's being used. Check for error messages from Ollama that indicate GPU issues."
+    },
+    {
+      "priority": 2,
+      "action": "Implement batch embedding",
+      "expected_improvement": "Significantly reduce overhead per embedding",
+      "implementation": "1. Determine if the Ollama Python library supports batch embedding.  2. If supported, modify the `store_research` script to pass batches of text chunks to the embedding function instead of individual chunks. 3. If the Ollama library doesn't support batching, consider making direct API calls to the Ollama server.  Example (Conceptual): `embeddings = client.embeddings(model='nomic-embed-text', inputs=['text1', 'text2', 'text3'])`"
+    },
+    {
+      "priority": 3,
+      "action": "Evaluate alternative embedding models",
+      "expected_improvement": "Potentially faster and/or higher quality embeddings",
+      "implementation": "1. Download and test `mxbai-embed-large`, `all-minilm`, and `snowflake-arctic-embed` models with Ollama.  2. Benchmark the embedding time for each model with a representative sample of text chunks. 3. Evaluate the embedding quality using a downstream task (e.g., retrieval accuracy in Qdrant)."
+    },
+    {
+      "priority": 4,
+      "action": "Implement a caching mechanism for common terms/phrases",
+      "expected_improvement": "Reduce redundant embedding calculations",
+      "implementation": "1. Create a dictionary or database to store embeddings of frequently encountered terms and phrases.  2. Before embedding a chunk of text, check if any of its sub-strings are present in the cache. 3. If a cache hit occurs, retrieve the pre-computed embedding instead of calling Ollama. 4. Periodically update the cache to reflect changes in the data."
+    }
+  ],
+  "alternative_models": [
+    {
+      "name": "mxbai-embed-large",
+      "dimensions": 1024,
+      "pros": [
+        "Potentially higher quality embeddings than nomic-embed-text",
+        "Good balance of speed and accuracy"
+      ],
+      "cons": [
+        "Larger model size may require more VRAM",
+        "May be slower than smaller models"
+      ],
+      "expected_latency": "Unknown, needs benchmarking"
+    },
+    {
+      "name": "all-minilm",
+      "dimensions": 384,
+      "pros": [
+        "Very fast embedding speed",
+        "Small model size",
+        "Low VRAM requirement"
+      ],
+      "cons": [
+        "Lower embedding quality compared to larger models",
+        "May not be suitable for complex semantic tasks"
+      ],
+      "expected_latency": "Unknown, needs benchmarking"
+    },
+    {
+      "name": "snowflake-arctic-embed",
+      "dimensions": 1024,
+      "pros": [
+        "Strong performance on a variety of tasks",
+        "Designed for enterprise use"
+      ],
+      "cons": [
+        "Potentially slower than smaller models",
+        "May have licensing restrictions"
+      ],
+      "expected_latency": "Unknown, needs benchmarking"
+    }
+  ],
+  "target_latency": "<500ms per embedding",
+  "quick_wins": [
+    "Set `OLLAMA_NUM_GPU=1` environment variable",
+    "Restart Ollama after setting the environment variable",
+    "Monitor GPU utilization during embedding",
+    "Test a smaller embedding model like `all-minilm`"
+  ]
+}

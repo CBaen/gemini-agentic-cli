@@ -1,0 +1,24 @@
+{
+  "thesis_id": "L03",
+  "title": "Qdrant Batch Operations",
+  "batch_upsert": {
+    "endpoint": "/collections/{name}/points/batch",
+    "method": "PUT",
+    "body_format": "List of point objects",
+    "max_batch_size": "Limited by Qdrant configuration and available memory, start with 100 and benchmark"
+  },
+  "parallel_embedding": {
+    "technique": "ThreadPoolExecutor",
+    "code_example": "import concurrent.futures\n\ndef embed_chunk(chunk):\n  return embed_function(chunk)\n\nwith concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:\n  embeddings = list(executor.map(embed_chunk, chunks))",
+    "expected_speedup": "Up to 8x, but limited by CPU core count and Ollama's internal parallelism"
+  },
+  "pipeline_pattern": {
+    "description": "Use asyncio to concurrently embed and store chunks",
+    "code_example": "import asyncio\n\nasync def embed_and_store(chunk):\n    embedding = await asyncio.to_thread(embed_function, chunk)\n    await store_in_qdrant(embedding)\n\nasync def main():\n    tasks = [embed_and_store(chunk) for chunk in chunks]\n    await asyncio.gather(*tasks)\n\nasyncio.run(main())"
+  },
+  "grpc_vs_rest": {
+    "recommendation": "gRPC",
+    "latency_difference": "gRPC is generally faster due to binary protocol and connection reuse."
+  },
+  "target_time_10_chunks": "5 seconds"
+}

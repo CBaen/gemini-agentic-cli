@@ -1,0 +1,29 @@
+Loaded cached credentials.
+```json
+{
+  "thesis_id": "L02",
+  "json_mode": {
+    "available": false,
+    "how_to_enable": "Not available in Gemini 2.0 Flash"
+  },
+  "prompt_patterns": [
+    {
+      "name": "Instructional Prompt",
+      "template": "Return a JSON object with the following keys: [key1], [key2], [key3]. Do not include any other text.",
+      "success_rate": "medium"
+    },
+    {
+      "name": "Schema Definition",
+      "template": "You are a JSON API. Return a JSON object conforming to the following schema: [JSON Schema].",
+      "success_rate": "high"
+    }
+  ],
+  "anti_patterns": [
+    "Asking for conversational output",
+    "Providing ambiguous instructions",
+    "Not specifying the output format clearly"
+  ],
+  "keyword_technique": "Instruct Gemini to extract the most relevant keywords from its response and include them in a 'keywords' field in the JSON output.",
+  "recommended_structure": "Return a JSON object with the following structure:\n```json\n{\n  \"key1\": \"value1\",\n  \"key2\": \"value2\",\n  \"keywords\": [\"keyword1\", \"keyword2\"]\n}\n```"
+}
+```

@@ -1,0 +1,43 @@
+Okay, I understand the context, the bottlenecks, and the research direction. I will focus on addressing the "Subagent Summary Validation" thesis (L05).
+```json
+{
+  "thesis_id": "L05",
+  "title": "Subagent Summary Validation",
+  "required_sections": [
+    {
+      "name": "Code Snippets",
+      "purpose": "Preserve exact implementations for re-use",
+      "validation": "Regex search for code syntax (e.g., 'def ', 'import ', etc.)"
+    },
+    {
+      "name": "Commands",
+      "purpose": "Ensure exact commands are available for execution",
+      "validation": "Regex search for common CLI patterns (e.g., '^[a-z]+ .*$')"
+    },
+    {
+      "name": "URLs",
+      "purpose": "Maintain links to resources and documentation",
+      "validation": "Regex search for URL patterns (e.g., 'https?://.*')"
+    },
+    {
+      "name": "Numbers",
+      "purpose": "Retain specific numerical values for calculations or comparisons",
+      "validation": "Regex search for numerical patterns (e.g., '[0-9]+\.[0-9]+')"
+    }
+  ],
+  "summary_template": {
+    "structure": "Concise paragraph summary + structured sections for Code, Commands, URLs, and Numbers",
+    "example": "The model X was fine-tuned using command 'python train.py --lr 0.001'. The learning rate used was 0.001 and the model is available at https://example.com/model. Code snippet used: `def train(): ...`"
+  },
+  "coordinates_pattern": {
+    "description": "Summary contains a concise overview, and includes Qdrant point IDs for accessing the raw research chunks.",
+    "when_to_drill_down": "When the summary lacks sufficient detail for a specific action, or when validation fails.",
+    "implementation": "Summary includes 'point_ids: [id1, id2, ...]' allowing retrieval of original content via Qdrant."
+  },
+  "validation_checklist": [
+    "Check for presence of required sections (Code, Commands, URLs, Numbers)",
+    "Verify content in each section using regex validation",
+    "If coordinates_pattern is used, ensure point IDs are valid and accessible in Qdrant"
+  ],
+  "minimum_viable_summary": "A concise overview including the primary research finding AND all Code, Commands, URLs, and Numbers required for action."
+}

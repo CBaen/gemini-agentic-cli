@@ -1,0 +1,36 @@
+Loaded cached credentials.
+```json
+{
+  "thesis_id": "L06",
+  "what_to_index": {
+    "always": [],
+    "selective": ["Key functions and classes with associated docstrings", "Common code patterns"],
+    "never": ["Entire codebase", "Generated code", "Dependencies"]
+  },
+  "chunking_strategy": {
+    "unit": "Function, Class, File",
+    "max_size": "512 tokens",
+    "context": "Include surrounding code context, imports, and module-level docstrings"
+  },
+  "embedding_content": {
+    "recommendation": "Code with docstrings",
+    "format": "Concatenate code and docstring, or create separate embeddings"
+  },
+  "freshness": {
+    "trigger": "Git commit, scheduled task",
+    "invalidation": "Git commit hash, timestamp"
+  },
+  "query_patterns": [
+    {
+      "question": "Find implementations of a specific function",
+      "query": "Implementation of function X",
+      "result": "Code snippets containing function X and its usage"
+    },
+    {
+      "question": "Find code patterns related to a specific task",
+      "query": "Code pattern for task Y",
+      "result": "Code snippets demonstrating the pattern for task Y"
+    }
+  ]
+}
+```

@@ -1,0 +1,28 @@
+Okay, I understand the goal is to compare embedding models suitable for the existing hardware (4GB VRAM) to improve embedding latency while maintaining reasonable quality for the "Lineage" system. A JSON output containing the comparison data, GPU usage verification, quantization options, API fallback strategies, and a final recommendation is required.
+
+I will perform web searches to gather information on embedding models, their VRAM requirements, latency, and quantization options. I will also research how to check GPU usage in Ollama and how to configure Ollama to use the GPU. Based on the findings, I'll suggest a primary model and migration steps.
+
+```json
+{
+  "thesis_id": "L07",
+  "title": "Embedding Model Comparison",
+  "models": [],
+  "gpu_check": {
+    "how_to_verify": "command to check GPU usage",
+    "ollama_gpu_config": "how to enable"
+  },
+  "quantization": {
+    "available_options": ["list"],
+    "trade_offs": "quality vs speed"
+  },
+  "api_fallback": {
+    "recommendation": "when to use",
+    "cost_per_1k": "estimate",
+    "latency": "expected"
+  },
+  "recommendation": {
+    "primary_model": "what to switch to",
+    "expected_improvement": "Xs faster",
+    "migration_steps": ["list"]
+  }
+}
