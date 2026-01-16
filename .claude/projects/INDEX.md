@@ -28,19 +28,19 @@ Quick-scan list. Load individual files only when working on one.
 | L01 | Ollama Embedding Optimization | done | @claude |
 | L02 | Gemini Prompt Engineering | done | @claude |
 | L03 | Qdrant Batch Operations | done | @claude |
-| L04 | Auto-Discovery Before Research | backlog | - |
-| L05 | Subagent Summary Validation | backlog | - |
-| L06 | Code Indexing for Qdrant | backlog | - |
-| L07 | Embedding Model Comparison | backlog | - |
-| L08 | Gemini Worker Health Monitoring | backlog | - |
-| L09 | Context Window Management | backlog | - |
-| L10 | Cross-Project Knowledge Sharing | backlog | - |
-| L11 | Handoff Protocol Optimization | backlog | - |
-| L12 | Decay Rate Tuning | backlog | - |
-| L13 | Subagent Task Distribution | backlog | - |
-| L14 | Error Recovery Patterns | backlog | - |
-| L15 | Research Synthesis Patterns | backlog | - |
-| L16 | Session Continuity Patterns | backlog | - |
+| L04 | Auto-Discovery Before Research | done | @claude |
+| L05 | Subagent Summary Validation | done | @claude |
+| L06 | Code Indexing for Qdrant | done | @claude |
+| L07 | Embedding Model Comparison | done | @claude |
+| L08 | Gemini Worker Health Monitoring | done | @claude |
+| L09 | Context Window Management | done | @claude |
+| L10 | Cross-Project Knowledge Sharing | done | @claude |
+| L11 | Handoff Protocol Optimization | done | @claude |
+| L12 | Decay Rate Tuning | done | @claude |
+| L13 | Subagent Task Distribution | done | @claude |
+| L14 | Error Recovery Patterns | done | @claude |
+| L15 | Research Synthesis Patterns | done | @claude |
+| L16 | Session Continuity Patterns | done | @claude |
 
 **Status**: `backlog` → `active` → `done` | `blocked`
 

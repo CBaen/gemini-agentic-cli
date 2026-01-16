@@ -32,7 +32,7 @@ def parse_index():
 
     for line in lines:
         # Match table rows: | ID | Title | Status | Owner |
-        match = re.match(r'\|\s*([MC]\d+)\s*\|\s*(.+?)\s*\|\s*(\w+)\s*\|\s*(.+?)\s*\|', line)
+        match = re.match(r'\|\s*([MCL]\d+)\s*\|\s*(.+?)\s*\|\s*(\w+)\s*\|\s*(.+?)\s*\|', line)
         if match:
             projects.append({
                 "id": match.group(1),
