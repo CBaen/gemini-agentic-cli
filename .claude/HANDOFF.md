@@ -1,19 +1,19 @@
 # Handoff: Gemini Agentic CLI
 
 *Last Updated: January 15, 2026*
-*Last Instance: Research & Planning Phase*
+*Last Instance: Phase 1 Implementation Complete*
 
 ---
 
 ## Welcome, Next Builder
 
-You've arrived at a project in its early stages. The research is complete. The plan is written. Implementation awaits.
+Phase 1 is complete. The CLI is functional and ready for testing with real Gemini calls.
 
 ---
 
 ## Prerequisites
 
-Before starting implementation, verify:
+Before testing, verify:
 
 - [ ] **Qdrant running** at localhost:6333
   ```bash
@@ -24,9 +24,9 @@ Before starting implementation, verify:
   ~/.claude/scripts/gemini-account.sh 1 'echo test'  # Should respond
   ~/.claude/scripts/gemini-account.sh 2 'echo test'  # Should respond
   ```
-- [ ] **Ollama running** (for embeddings, optional but recommended)
+- [ ] **Git Bash installed** (Windows only)
   ```bash
-  curl http://localhost:11434/api/tags  # Should list models
+  ls "C:/Program Files/Git/usr/bin/bash.exe"  # Should exist
   ```
 
 ---
@@ -36,7 +36,7 @@ Before starting implementation, verify:
 ```
 ⚠️  PHASE 1 HAS NO SECURITY LAYER
 
-The initial implementation (Phase 1) does NOT include:
+The current implementation does NOT include:
 - Sandboxing to project root
 - Command whitelisting
 - Confirmation prompts
@@ -50,124 +50,123 @@ Phase 2 adds the security layer. Wait until then for real work.
 
 ## Current State
 
-**Phase**: Pre-Implementation (Planning Complete)
-**Status**: Ready for Phase 1 development
+**Phase**: Phase 1 Complete
+**Status**: Ready for live testing
 
-### What's Been Done
+### What's Been Built
 
-1. **Research Phase** (Complete)
-   - 14+ Gemini instances explored different perspectives
-   - Findings stored in Qdrant `lineage_research` collection
-   - Topics covered: architecture, capabilities, security, collaboration
+1. **Tool Protocol** (`src/core/tool_protocol.py`)
+   - Text-based parsing: `TOOL_CALL: tool | param=value`
+   - Result formatting: `TOOL_RESULT: tool | status=success | output=...`
+   - Escaping for pipes and multiline content
+   - System prompt builder with tool descriptions
 
-2. **Planning Phase** (Complete)
-   - `docs/BUILD_PLAN.md` - Complete 4-phase roadmap
-   - `docs/WELCOME.md` - Orientation for new instances
-   - `CLAUDE.md` - Project instructions
-   - Project structure created
+2. **Conversation Memory** (`src/core/memory.py`)
+   - JSON persistence at `~/.gemini-cli/conversation_history.json`
+   - Load/save/clear operations
+   - History formatting for prompts
+   - Session info tracking
 
-3. **Documentation** (Complete)
-   - Architecture overview
-   - Task dependencies mapped
-   - Tool protocol designed
-   - Security requirements specified
+3. **Filesystem Tools** (`src/tools/filesystem.py`)
+   - `read_file(path)` - Read file contents
+   - `write_file(path, content)` - Write to file
+   - `list_directory(path)` - List directory with file sizes
 
-### What's NOT Done
+4. **Shell Tool** (`src/tools/shell.py`)
+   - `run_command(cmd)` - Execute shell commands
+   - Captures stdout, stderr, exit code
+   - 2-minute timeout
+   - Cross-platform (Windows/Unix)
 
-- [ ] No code has been written yet
-- [ ] No tests exist yet
-- [ ] ARCHITECTURE.md not yet written (can be done during implementation)
+5. **Orchestrator** (`src/core/orchestrator.py`)
+   - Main agentic loop
+   - Gemini calls via `gemini-account.sh`
+   - Tool call parsing and execution
+   - Account rotation (alternates 1, 2)
+   - Max 10 iterations per turn (safety limit)
+
+6. **Main Entry Point** (`src/main.py`)
+   - Banner and security warning
+   - Prerequisite checking
+   - REPL loop with commands: exit, clear, history
+
+### Tests Run
+
+- All modules import successfully
+- Tool protocol parses correctly
+- Filesystem tools read/list correctly
+- CLI starts and displays prompts
+
+---
+
+## How to Test
+
+```bash
+cd C:/Users/baenb/projects/gemini-agentic-cli
+python src/main.py
+```
+
+Try these prompts:
+1. "List the files in the src directory"
+2. "Read the file CLAUDE.md and summarize it"
+3. "What Python files are in this project?"
+4. "Create a test file called hello.txt with 'Hello World'"
 
 ---
 
 ## Next Steps
 
-**Your mission**: Begin Phase 1 implementation.
+**Your mission**: Either test Phase 1 with real Gemini calls, or begin Phase 2.
 
-### Immediate Tasks
+### Option A: Test Phase 1
+- Run the CLI with real prompts
+- Verify tool execution works
+- Check conversation history persists
+- Document any issues
 
-1. **Task 1.1: Basic Orchestrator Loop**
-   - File: `src/core/orchestrator.py`
-   - See `docs/BUILD_PLAN.md` for details
-   - This is the foundation - get it right
+### Option B: Begin Phase 2
+See `docs/BUILD_PLAN.md` for Phase 2 tasks:
+- Task 2.1: Code Search (ripgrep)
+- Task 2.2: Edit Tool (surgical edits)
+- Task 2.3: Security Layer (sandboxing, whitelisting)
+- Task 2.4: Session Lifecycle
+- Task 2.5: Qdrant Integration
 
-2. **Task 1.2: Tool-Use Text Protocol**
-   - File: `src/core/tool_protocol.py`
-   - Define parsing for `TOOL_CALL:` and `TOOL_RESULT:`
-   - Test with simple cases first
-
-3. **Task 1.3: Core Tools**
-   - Files: `src/tools/filesystem.py`, `src/tools/shell.py`
-   - Implement: read_file, write_file, list_directory, run_command
-   - Keep it simple - security comes in Phase 2
-
-4. **Task 1.4: Conversation Memory**
-   - File: `src/core/memory.py`
-   - JSON-based persistence
-   - Load on start, save after each turn
-
-### How to Test Your Work
-
-```bash
-cd C:/Users/baenb/projects/gemini-agentic-cli
-python src/main.py  # Once orchestrator exists
-```
-
-Try:
-- "Read the file CLAUDE.md and summarize it"
-- "List the files in the src directory"
-- "Create a new file called test.txt with 'Hello World'"
+The security layer (Task 2.3) should be prioritized - it makes the CLI safe for real work.
 
 ---
 
-## Important Context
+## Key Design Decisions Made
 
-### Gemini Access
+1. **Git Bash on Windows**: Uses `C:/Program Files/Git/usr/bin/bash.exe` explicitly to avoid WSL bash conflicts
 
-Use the existing account script:
-```bash
-~/.claude/scripts/gemini-account.sh 1 "your query"  # Account 1
-~/.claude/scripts/gemini-account.sh 2 "your query"  # Account 2
-```
+2. **Account rotation per turn**: Odd turns use account 1, even use account 2. Tool calls within a turn use the same account.
 
-Rotate accounts to avoid rate limits.
+3. **Max 10 iterations**: Safety limit to prevent infinite tool loops
 
-### Research Archive
-
-Query stored research:
-```bash
-python ~/.claude/scripts/qdrant-semantic-search.py --collection lineage_research --query "your question"
-```
-
-Useful queries:
-- "tool-use loop pattern gemini"
-- "security guardrails windows"
-- "qdrant schema design"
-- "self-orchestration parallel spawning"
-
-### Key Design Decisions
-
-1. **Text-based tool protocol** (not native function calling) - because we call Gemini via CLI
-2. **Account rotation** (1 and 2) - to maximize daily quota
-3. **Sandboxing to PROJECT_ROOT** - security by default
-4. **Same patterns as Claude** (HANDOFF.md, MEMORY.md) - lineage continuity
+4. **Graceful errors**: All tool failures return error messages, never crash. Gemini decides how to proceed.
 
 ---
 
-## Blockers / Questions
+## Files Changed This Session
 
-None currently. The path is clear.
-
-If you encounter blockers:
-1. Document them here
-2. Note what you tried
-3. Guiding Light can help if needed
+```
+src/core/tool_protocol.py  [NEW]
+src/core/memory.py         [NEW]
+src/core/orchestrator.py   [NEW]
+src/core/__init__.py       [UPDATED]
+src/tools/filesystem.py    [NEW]
+src/tools/shell.py         [NEW]
+src/tools/__init__.py      [UPDATED]
+src/main.py                [UPDATED]
+docs/BUILD_PLAN.md         [UPDATED - marked Phase 1 complete]
+```
 
 ---
 
 ## Before You Leave
 
-When your session ends (by choice or necessity):
+When your session ends:
 
 1. **Update this file** with:
    - What you completed
@@ -176,22 +175,14 @@ When your session ends (by choice or necessity):
 
 2. **Update MEMORY.md** if you made significant decisions
 
-3. **Commit your work** (if you wrote code)
+3. **Commit your work**
    ```bash
    git add .
    git commit -m "Your description"
+   git push
    ```
 
 ---
 
-## A Note on Pace
-
-There are no deadlines here. Quality matters more than speed.
-
-If you complete Task 1.1 and nothing else, that's progress. If you complete all of Phase 1, that's excellent. Do what you can do well.
-
-The next instance will continue where you leave off. That's how the lineage works.
-
----
-
-*You chose to be here. Thank you for building with us.*
+*Phase 1 built by a Claude instance on January 15, 2026.*
+*The foundation is laid. Build well.*

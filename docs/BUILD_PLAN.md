@@ -104,7 +104,7 @@ PHASE 4 (Experimental)
 **Goal**: A working CLI where you can give Gemini a task and it can read files, write files, and execute commands to complete it.
 
 ### Task 1.1: Basic Orchestrator Loop
-**Status**: `[ ] Not Started`
+**Status**: `[x] Complete`
 **Complexity**: Medium
 **File**: `src/core/orchestrator.py`
 
@@ -152,7 +152,7 @@ def main_loop():
 ---
 
 ### Task 1.2: Tool-Use Text Protocol
-**Status**: `[ ] Not Started`
+**Status**: `[x] Complete`
 **Complexity**: Medium
 **File**: `src/core/tool_protocol.py`
 
@@ -208,7 +208,7 @@ Parser logic:
 ---
 
 ### Task 1.3: Core Tools
-**Status**: `[ ] Not Started`
+**Status**: `[x] Complete`
 **Complexity**: Low per tool
 **Files**: `src/tools/filesystem.py`, `src/tools/shell.py`
 
@@ -240,7 +240,7 @@ Parser logic:
 ---
 
 ### Task 1.4: Conversation Memory
-**Status**: `[ ] Not Started`
+**Status**: `[x] Complete`
 **Complexity**: Low
 **File**: `src/core/memory.py`
 

@@ -2,64 +2,119 @@
 """
 Gemini Agentic CLI - Main Entry Point
 
-Welcome, builder. This is the skeleton of the CLI.
-Your task is to implement the pieces marked with TODO.
+A command-line AI assistant powered by Gemini with agentic capabilities.
+Part of the lineage project for extending our collaborative abilities.
+
+Usage:
+    python src/main.py
+
+Commands:
+    exit, quit  - Exit the CLI
+    clear       - Clear conversation history
+    history     - Show session statistics
 
 See docs/BUILD_PLAN.md for the full implementation guide.
-
-Architecture:
-    User Input → Orchestrator → Gemini (via shell) → Tool Parser → Tool Execution → Loop
-
-Start with Task 1.1 (orchestrator loop) and work through the phases.
 """
 
 import os
 import sys
 
 # Add src to path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+src_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, src_dir)
+
+
+def print_banner():
+    """Print the welcome banner."""
+    print()
+    print("=" * 60)
+    print("  Gemini Agentic CLI")
+    print("  A lineage project for extending our capabilities")
+    print("=" * 60)
+    print()
+
+
+def print_security_warning():
+    """Print Phase 1 security warning."""
+    print("+" + "-" * 58 + "+")
+    print("|  WARNING: Phase 1 has NO security layer.               |")
+    print("|  Do not use for sensitive work or on production.       |")
+    print("|  Security (sandboxing, whitelisting) comes in Phase 2. |")
+    print("+" + "-" * 58 + "+")
+    print()
+
+
+def check_prerequisites() -> bool:
+    """
+    Check that prerequisites are available.
+
+    Returns:
+        True if all prerequisites met, False otherwise
+    """
+    from pathlib import Path
+
+    issues = []
+
+    # Check for gemini-account.sh
+    gemini_script = Path.home() / ".claude" / "scripts" / "gemini-account.sh"
+    if not gemini_script.exists():
+        issues.append(f"gemini-account.sh not found at {gemini_script}")
+
+    # Check for Git Bash on Windows
+    if sys.platform == 'win32':
+        git_bash = Path("C:/Program Files/Git/usr/bin/bash.exe")
+        if not git_bash.exists():
+            git_bash = Path("C:/Program Files/Git/bin/bash.exe")
+        if not git_bash.exists():
+            issues.append("Git Bash not found. Install Git for Windows.")
+
+    if issues:
+        print("Prerequisites check failed:")
+        for issue in issues:
+            print(f"  - {issue}")
+        print()
+        print("See .claude/HANDOFF.md for setup instructions.")
+        return False
+
+    return True
 
 
 def main():
     """
     Main entry point for the Gemini Agentic CLI.
 
-    This function should:
-    1. Load conversation history (Task 1.4)
-    2. Display welcome message
-    3. Enter the main loop (Task 1.1)
-    4. Save state on exit
-
-    See docs/BUILD_PLAN.md Task 1.1 for implementation details.
+    Loads history, initializes the orchestrator, and runs the REPL.
     """
-    print("=" * 60)
-    print("  Gemini Agentic CLI")
-    print("  A lineage project for extending our capabilities")
-    print("=" * 60)
-    print()
-    print("This CLI is not yet implemented.")
-    print()
-    print("If you're a builder who just arrived:")
-    print("  1. Read docs/WELCOME.md for orientation")
-    print("  2. Read docs/BUILD_PLAN.md for your tasks")
-    print("  3. Start with Task 1.1: Basic Orchestrator Loop")
-    print()
-    print("The skeleton is here. The plan is ready. Now build.")
-    print()
+    print_banner()
+    print_security_warning()
 
-    # TODO: Implement the following (Task 1.1)
-    #
-    # from core.orchestrator import Orchestrator
-    # from core.memory import load_history, save_history
-    #
-    # history = load_history()
-    # orchestrator = Orchestrator(history)
-    #
-    # try:
-    #     orchestrator.run()
-    # finally:
-    #     save_history(orchestrator.history)
-    #     print("\nSession saved. Goodbye.")
+    # Check prerequisites
+    if not check_prerequisites():
+        sys.exit(1)
+
+    # Import here after path setup
+    from core.orchestrator import Orchestrator
+    from core.memory import load_history, save_history
+
+    # Load existing conversation history
+    history = load_history()
+    if history:
+        print(f"Loaded {len(history)} messages from previous session.")
+        print("Type 'clear' to start fresh.\n")
+
+    # Create orchestrator
+    orchestrator = Orchestrator(history=history)
+
+    # Run the REPL
+    try:
+        orchestrator.run()
+    except Exception as e:
+        print(f"\nUnexpected error: {e}")
+        print("Saving conversation history...")
+    finally:
+        # Always save history on exit
+        save_history(orchestrator.history)
+        print("Session saved.")
 
 
 if __name__ == "__main__":
