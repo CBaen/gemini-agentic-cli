@@ -23,8 +23,8 @@ Quick-scan list. Load individual files only when working on one.
 | M26 | Alert Prioritization | backlog | - |
 | M27 | Evolution Loop Parallelization | backlog | - |
 | M30 | M&A Prediction | backlog | - |
-| C01 | Orchestrator Architecture | backlog | - |
-| C02 | Task Routing Patterns | backlog | - |
+| C01 | Orchestrator Architecture | done | @claude |
+| C02 | Task Routing Patterns | done | @claude |
 | L01 | Ollama Embedding Optimization | done | @claude |
 | L02 | Gemini Prompt Engineering | done | @claude |
 | L03 | Qdrant Batch Operations | done | @claude |
