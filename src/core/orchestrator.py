@@ -47,6 +47,15 @@ from .memory import (
     format_history_for_prompt
 )
 
+# Import color utilities for friendly status messages
+try:
+    from utils.colors import green, yellow, red
+except ImportError:
+    # Fallback if colors module not available
+    def green(text): return text
+    def yellow(text): return text
+    def red(text): return text
+
 
 class Orchestrator:
     """
@@ -516,7 +525,13 @@ class Orchestrator:
                     cwd=str(Path.home())  # Run from home dir to avoid agentic mode in project
                 )
             except subprocess.TimeoutExpired:
-                return "Error: Gemini request timed out after 5 minutes."
+                return red(
+                    "I'm sorry - I had to stop waiting for Gemini after 5 minutes.\n\n"
+                    "What might help:\n"
+                    "• Try asking your question in a simpler way\n"
+                    "• Check your internet connection\n"
+                    "• The service might be busy - try again in a moment"
+                )
             except Exception as e:
                 return f"Error calling Gemini: {e}"
         else:
@@ -530,7 +545,13 @@ class Orchestrator:
                     cwd=os.getcwd()
                 )
             except subprocess.TimeoutExpired:
-                return "Error: Gemini request timed out after 5 minutes."
+                return red(
+                    "I'm sorry - I had to stop waiting for Gemini after 5 minutes.\n\n"
+                    "What might help:\n"
+                    "• Try asking your question in a simpler way\n"
+                    "• Check your internet connection\n"
+                    "• The service might be busy - try again in a moment"
+                )
             except Exception as e:
                 return f"Error calling Gemini: {e}"
 
@@ -544,6 +565,122 @@ class Orchestrator:
             return "Error: Gemini returned an empty response. This may indicate rate limiting or authentication issues."
 
         return response
+
+    def _get_tool_action_message(self, tool_name: str, args: dict) -> str:
+        """
+        Generate a friendly, conversational message for tool execution.
+
+        Args:
+            tool_name: The name of the tool being executed
+            args: The arguments passed to the tool
+
+        Returns:
+            A human-friendly message describing what's happening
+        """
+        # Web tools
+        if tool_name == "fetch_url":
+            url = args.get("url", "that URL")
+            return f"Working on it! Fetching {url} for you..."
+        elif tool_name == "web_search":
+            query = args.get("query", "that")
+            return f"Searching the web for '{query}'..."
+        elif tool_name == "verify_claim":
+            return "Fact-checking that claim for you..."
+        elif tool_name == "fetch_multiple_urls":
+            return "Fetching multiple URLs - this might take a moment..."
+        elif tool_name == "extract_links":
+            return "Extracting links from that page..."
+        elif tool_name == "scrape_structured_data":
+            return "Analyzing that page's structure..."
+        elif tool_name == "search_and_summarize":
+            topic = args.get("topic", "that topic")
+            return f"Researching '{topic}' across multiple sources..."
+        elif tool_name == "monitor_page_changes":
+            return "Checking that page for changes..."
+
+        # File tools
+        elif tool_name == "read_file":
+            path = args.get("path", "that file")
+            return f"Reading {path}..."
+        elif tool_name == "write_file":
+            path = args.get("path", "that file")
+            return f"Writing to {path}..."
+        elif tool_name == "edit_file":
+            path = args.get("path", "that file")
+            return f"Editing {path}..."
+        elif tool_name == "delete_file":
+            return "Deleting that file..."
+        elif tool_name == "delete_directory":
+            return "Deleting that directory..."
+        elif tool_name == "create_directory":
+            return "Creating that directory..."
+        elif tool_name == "move_file":
+            return "Moving that file..."
+        elif tool_name == "copy_file":
+            return "Copying that file..."
+        elif tool_name == "list_directory":
+            path = args.get("path", "directory")
+            return f"Listing {path}..."
+
+        # Shell tools
+        elif tool_name == "run_command":
+            cmd = args.get("cmd", "that command")
+            return f"Running: {cmd[:50]}..."
+
+        # Search tools
+        elif tool_name == "search_code":
+            pattern = args.get("pattern", "that")
+            return f"Searching code for '{pattern}'..."
+        elif tool_name == "search_files":
+            pattern = args.get("pattern", "files")
+            return f"Finding {pattern}..."
+        elif tool_name == "grep_count":
+            return "Counting matches..."
+
+        # Qdrant tools
+        elif tool_name == "query_research":
+            query = args.get("query", "that")
+            return f"Searching research archive for '{query}'..."
+        elif tool_name == "store_research":
+            return "Storing that to the research archive..."
+
+        # Spawn tools
+        elif tool_name == "spawn_research":
+            return "Spawning research workers - this'll take a bit..."
+        elif tool_name == "spawn_single":
+            return "Spawning a worker for that task..."
+
+        # Image tools
+        elif tool_name in ["analyze_image", "generate_image_prompt", "describe_for_accessibility", "extract_text_from_image"]:
+            return "Analyzing that image..."
+
+        # Video tools
+        elif tool_name in ["analyze_video", "describe_video_scene", "extract_video_frames", "transcribe_video", "count_objects_in_video", "detect_video_emotions"]:
+            return "Processing that video - might take a while..."
+
+        # Audio tools
+        elif tool_name in ["transcribe_audio", "generate_speech", "generate_dialogue", "analyze_audio", "translate_audio", "extract_audio_segment"]:
+            return "Working on that audio..."
+
+        # Document tools
+        elif tool_name in ["process_document", "extract_tables", "summarize_document", "extract_form_data", "compare_documents", "analyze_spreadsheet", "query_document_section"]:
+            return "Processing that document..."
+
+        # Code execution tools
+        elif tool_name in ["run_python", "run_javascript"]:
+            return "Executing that code..."
+
+        # Notebook tools
+        elif tool_name in ["create_notebook", "run_notebook", "add_cell", "edit_cell", "export_notebook"]:
+            return "Working on that notebook..."
+
+        # Claude collaboration tools
+        elif tool_name in ["check_turn", "signal_claude_turn", "read_handoff_context", "add_to_shared_memory"]:
+            return "Coordinating with Claude..."
+
+        # Default fallback
+        else:
+            return f"Working on: {tool_name}..."
 
     def _execute_tool(self, tool_call: ToolCall) -> ToolResult:
         """
@@ -1023,6 +1160,7 @@ class Orchestrator:
             full_prompt = f"{self.system_prompt}\n\nUser: {user_input}"
 
         # Call Gemini
+        print(green("I'm thinking! I know you're excited - give me a moment..."))
         response = self._call_gemini(full_prompt)
 
         # Handle errors from Gemini
@@ -1042,7 +1180,9 @@ class Orchestrator:
             tool_results = []
 
             for tc in tool_calls:
-                print(f"  [Executing: {tc.tool}]")
+                # Show friendly message for what we're doing
+                action_msg = self._get_tool_action_message(tc.tool, tc.args)
+                print(yellow(action_msg))
                 result = self._execute_tool(tc)
                 formatted = format_tool_result(result)
                 tool_results.append(formatted)

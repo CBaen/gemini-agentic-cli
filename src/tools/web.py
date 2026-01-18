@@ -24,6 +24,13 @@ from pathlib import Path
 from typing import Tuple, Optional, List
 from urllib.parse import urlparse
 
+# Import color utilities for friendly error messages
+try:
+    from utils.colors import red
+except ImportError:
+    # Fallback if colors module not available
+    def red(text): return text
+
 
 # Gemini script location
 GEMINI_SCRIPT = Path.home() / ".claude" / "scripts" / "gemini-account.sh"
@@ -79,7 +86,14 @@ def call_gemini(query: str, account: int = 1, timeout: int = 120) -> Tuple[bool,
         return bool(response), response or "Empty response"
 
     except subprocess.TimeoutExpired:
-        return False, "Timeout"
+        timeout_msg = red(
+            f"I'm sorry - the request took too long and I had to stop waiting after {timeout} seconds.\n\n"
+            "What might help:\n"
+            "• Check if the URL works in your browser\n"
+            "• The site might be down or slow right now\n"
+            "• Try a different URL or try again later"
+        )
+        return False, timeout_msg
     except Exception as e:
         return False, f"Error: {e}"
 
