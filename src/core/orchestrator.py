@@ -485,27 +485,42 @@ class Orchestrator:
         acc = account or self._get_account()
         model_id = model or "gemini-2.5-flash-lite"  # Default to Flash-Lite for quota preservation
 
-        # Find Git Bash on Windows for reliable execution
+        # On Windows, call gemini directly via PowerShell (bypass shell script issues)
         if sys.platform == 'win32':
-            git_bash = Path("C:/Program Files/Git/usr/bin/bash.exe")
-            if not git_bash.exists():
-                git_bash = Path("C:/Program Files/Git/bin/bash.exe")
-            if not git_bash.exists():
-                return "Error: Git Bash not found. Please install Git for Windows."
+            # Swap credentials to requested account
+            gemini_dir = Path.home() / ".gemini"
+            try:
+                import shutil
+                shutil.copy2(
+                    gemini_dir / f"oauth_creds_account{acc}.json",
+                    gemini_dir / "oauth_creds.json"
+                )
+                shutil.copy2(
+                    gemini_dir / f"google_accounts_account{acc}.json",
+                    gemini_dir / "google_accounts.json"
+                )
+            except Exception as e:
+                return f"Error switching to account {acc}: {e}"
+
+            # Call gemini via PowerShell with positional prompt
+            # Use --output-format text for simple text responses (no tool execution)
+            escaped_prompt = prompt.replace("'", "''")  # PowerShell escaping
+            ps_command = f"gemini -m '{model_id}' --output-format text '{escaped_prompt}'"
 
             try:
                 result = subprocess.run(
-                    [str(git_bash), self.gemini_script, str(acc), prompt, model_id],
+                    ["powershell.exe", "-NonInteractive", "-Command", ps_command],
                     capture_output=True,
                     text=True,
                     timeout=300,
-                    cwd=os.getcwd()
+                    cwd=str(Path.home())  # Run from home dir to avoid agentic mode in project
                 )
             except subprocess.TimeoutExpired:
                 return "Error: Gemini request timed out after 5 minutes."
             except Exception as e:
                 return f"Error calling Gemini: {e}"
         else:
+            # On Linux/Mac, use bash script
             try:
                 result = subprocess.run(
                     ["bash", self.gemini_script, str(acc), prompt, model_id],
