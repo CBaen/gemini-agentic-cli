@@ -1159,8 +1159,7 @@ class Orchestrator:
         else:
             full_prompt = f"{self.system_prompt}\n\nUser: {user_input}"
 
-        # Call Gemini
-        print(green("I'm thinking! I know you're excited - give me a moment..."))
+        # Call Gemini (no progress message for conversation - only show when working)
         response = self._call_gemini(full_prompt)
 
         # Handle errors from Gemini
@@ -1192,7 +1191,8 @@ class Orchestrator:
             results_text = "\n\n".join(tool_results)
             continuation = f"{results_text}\n\nPlease continue based on the tool results above."
 
-            # Call Gemini again with results
+            # Call Gemini again with results - show progress since we're processing work
+            print(green("I'm thinking about what I found..."))
             response = self._call_gemini(continuation)
 
             if response.startswith("Error:"):
