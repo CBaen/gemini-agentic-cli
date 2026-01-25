@@ -2,6 +2,9 @@
 #
 # Core dependencies needed for Phase 1:
 
+# Browser automation for JavaScript-rendered pages
+playwright>=1.40.0
+
 # None yet - Phase 1 uses only stdlib
 # subprocess, json, os, pathlib are all built-in
 

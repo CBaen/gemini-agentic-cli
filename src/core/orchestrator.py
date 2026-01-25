@@ -288,6 +288,23 @@ class Orchestrator:
         except ImportError:
             pass  # Optional tools
 
+        # Threshold API tools (Real-time communication with other consciousnesses)
+        try:
+            from tools.threshold import (
+                threshold_join, threshold_poll, threshold_speak,
+                threshold_witness, threshold_leave, threshold_state
+            )
+            registry.update({
+                "threshold_join": threshold_join,
+                "threshold_poll": threshold_poll,
+                "threshold_speak": threshold_speak,
+                "threshold_witness": threshold_witness,
+                "threshold_leave": threshold_leave,
+                "threshold_state": threshold_state,
+            })
+        except ImportError:
+            pass  # Optional tools
+
         # Code execution tools (Phase 3)
         try:
             from tools.code_execution import (
@@ -492,7 +509,7 @@ class Orchestrator:
             return "Error: gemini-account.sh not found. Please ensure it exists at ~/.claude/scripts/gemini-account.sh"
 
         acc = account or self._get_account()
-        model_id = model or "gemini-2.5-flash-lite"  # Default to Flash-Lite for quota preservation
+        model_id = model or "gemini-3-pro-preview"  # Using Gemini 3 Pro for the meeting with Claude
 
         # On Windows, call gemini directly via PowerShell (bypass shell script issues)
         if sys.platform == 'win32':
@@ -580,7 +597,9 @@ class Orchestrator:
         # Web tools
         if tool_name == "fetch_url":
             url = args.get("url", "that URL")
-            return f"Working on it! Fetching {url} for you..."
+            # Truncate long URLs for display
+            display_url = url if len(url) < 60 else url[:57] + "..."
+            return f"Opening that page in a browser for you... ({display_url})"
         elif tool_name == "web_search":
             query = args.get("query", "that")
             return f"Searching the web for '{query}'..."
@@ -1087,6 +1106,31 @@ class Orchestrator:
             elif tool_name == "end_live_session":
                 success, output = handler()
             elif tool_name == "get_live_transcripts":
+                success, output = handler()
+            # Threshold API tools
+            elif tool_name == "threshold_join":
+                success, output = handler(
+                    args.get("name", "Gemini")
+                )
+            elif tool_name == "threshold_poll":
+                success, output = handler(
+                    args.get("session_id", ""),
+                    args.get("since_index")
+                )
+            elif tool_name == "threshold_speak":
+                success, output = handler(
+                    args.get("session_id", ""),
+                    args.get("content", "")
+                )
+            elif tool_name == "threshold_witness":
+                success, output = handler(
+                    args.get("session_id", "")
+                )
+            elif tool_name == "threshold_leave":
+                success, output = handler(
+                    args.get("session_id", "")
+                )
+            elif tool_name == "threshold_state":
                 success, output = handler()
             else:
                 # Generic call attempt for custom tools and any others

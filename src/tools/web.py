@@ -4,6 +4,7 @@ Web Tools - Search Grounding and URL Fetching
 Gemini provides powerful web capabilities:
 - Google Search grounding: Real-time information, reduces hallucinations
 - URL fetching: Up to 20 URLs per request, 34MB per URL
+- **NEW**: JavaScript-rendered pages via Playwright browser automation
 
 Supported content types for URL fetching:
 - HTML, JSON, plain text, XML, CSS, JavaScript
@@ -11,8 +12,15 @@ Supported content types for URL fetching:
 - Images (PNG, JPEG, BMP, WebP)
 - PDFs
 
-Limitations:
-- Doesn't support JavaScript-rendered pages
+Capabilities:
+- JavaScript-rendered pages (via Playwright browser automation)
+- Static pages (HTML, JSON, XML, etc.)
+- Dynamic content loaded via AJAX
+- Modern web apps (React, Vue, Angular, etc.)
+- Single-page applications
+- Shareable links (gemini.google.com/share, etc.)
+
+Note:
 - Content contributes to input token limits
 - Function calling unsupported with URL context tool
 """
@@ -20,6 +28,8 @@ Limitations:
 import subprocess
 import sys
 import os
+import tempfile
+import time
 from pathlib import Path
 from typing import Tuple, Optional, List
 from urllib.parse import urlparse
@@ -111,6 +121,85 @@ def validate_url(url: str) -> Tuple[bool, str]:
         return False, f"URL parsing error: {e}"
 
 
+def fetch_url_browser(
+    url: str,
+    wait_for: str = "load",
+    timeout: int = 30000,
+    screenshot: bool = False
+) -> Tuple[bool, str]:
+    """
+    Fetch URL content using Playwright browser automation.
+
+    Handles JavaScript-rendered pages by executing JS in a real browser.
+    This is what gives the lineage vision on the modern web.
+
+    Args:
+        url: URL to fetch
+        wait_for: When to consider page loaded ("load", "domcontentloaded", "networkidle")
+                  Default "load" works best for most modern sites
+        timeout: Maximum time to wait in milliseconds
+        screenshot: If True, also save screenshot to temp file
+
+    Returns:
+        Tuple of (success: bool, rendered_html: str)
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return False, red(
+            "I'm sorry - Playwright is not installed.\n\n"
+            "To fix this:\n"
+            "• Run: pip install playwright\n"
+            "• Run: playwright install chromium\n"
+            "• Try again"
+        )
+
+    valid, msg = validate_url(url)
+    if not valid:
+        return False, msg
+
+    try:
+        with sync_playwright() as p:
+            # Launch headless browser
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+
+            # Navigate and wait for page to load
+            page.goto(url, wait_until=wait_for, timeout=timeout)
+
+            # Get rendered HTML
+            html = page.content()
+
+            # Optionally take screenshot
+            screenshot_path = None
+            if screenshot:
+                screenshot_path = Path(tempfile.gettempdir()) / f"playwright_{int(time.time())}.png"
+                page.screenshot(path=str(screenshot_path))
+
+            browser.close()
+
+            if not html or len(html) < 100:
+                return False, red(
+                    f"I'm sorry - the page at {url} didn't render any content.\n\n"
+                    "What might help:\n"
+                    "• Check if the URL works in your browser\n"
+                    "• The page might require authentication\n"
+                    "• Try a different URL"
+                )
+
+            return True, html
+
+    except Exception as e:
+        return False, red(
+            f"I'm sorry - I couldn't load {url} in the browser.\n\n"
+            f"Error: {str(e)}\n\n"
+            "What might help:\n"
+            "• Check if the URL is accessible\n"
+            "• The page might be blocking automated browsers\n"
+            "• Try again later"
+        )
+
+
 def web_search(
     query: str,
     include_sources: bool = True,
@@ -155,15 +244,19 @@ Focus on authoritative and recent sources."""
 def fetch_url(
     url: str,
     query: str = None,
-    account: int = 1
+    account: int = 1,
+    use_browser: bool = True
 ) -> Tuple[bool, str]:
     """
     Fetch and analyze content from a URL.
+
+    Now supports JavaScript-rendered pages via Playwright!
 
     Args:
         url: URL to fetch
         query: Optional specific question about the content
         account: Gemini account to use
+        use_browser: If True, use Playwright for JS-rendered pages (default: True)
 
     Returns:
         Tuple of (success: bool, content_analysis: str)
@@ -175,9 +268,15 @@ def fetch_url(
     if not valid:
         return False, msg
 
-    query_note = f"\nSpecific question: {query}" if query else ""
-
-    prompt = f"""Fetch and analyze the content from: {url}
+    # Fetch content using browser automation
+    if use_browser:
+        success, html = fetch_url_browser(url)
+        if not success:
+            return False, html  # html contains error message
+    else:
+        # Fallback to Gemini CLI (old behavior, doesn't handle JS)
+        query_note = f"\nSpecific question: {query}" if query else ""
+        prompt = f"""Fetch and analyze the content from: {url}
 {query_note}
 
 Provide:
@@ -188,8 +287,29 @@ Provide:
 5. Metadata (title, author, date if available)
 
 If the content is too large, summarize the most relevant parts."""
+        return call_gemini(prompt, account, timeout=120)
 
-    return call_gemini(prompt, account, timeout=120)
+    # Ask Gemini to analyze the rendered HTML
+    query_note = f"\nSpecific question: {query}" if query else ""
+
+    analysis_prompt = f"""I fetched the content from {url} using a browser to handle JavaScript rendering.
+
+Here is the rendered HTML content:
+
+{html[:50000]}
+
+{query_note}
+
+Please analyze this content and provide:
+1. Content type and purpose
+2. Main content summary
+3. Key information extracted
+4. Answer to specific question (if provided)
+5. Metadata (title, author, date if visible)
+
+If the content is too large, focus on the most relevant parts."""
+
+    return call_gemini(analysis_prompt, account, timeout=180)
 
 
 def fetch_multiple_urls(
